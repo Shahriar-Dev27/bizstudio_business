@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, Lightbulb, NotebookPen, RotateCcw, Send, Square } from "lucide-react";
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -41,6 +42,7 @@ export function AdvisorExperience() {
 
   const pinnedTexts = useMemo(() => new Set(pins.map((note) => note.text.trim().toLowerCase())), [pins]);
 
+  // ponytail: notes stay in localStorage while accounts do not exist; move them server-side when cross-device login is introduced.
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       try {
@@ -100,27 +102,40 @@ export function AdvisorExperience() {
       let buffer = "";
       streamTextRef.current = "";
 
+      function consumeEvent(event: string) {
+        const data = event
+          .split(/\r?\n/)
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).trim())
+          .join("");
+        if (!data || data === "[DONE]") return;
+
+        let chunk: { choices?: Array<{ delta?: { content?: string } }>; error?: { message?: string } };
+        try {
+          chunk = JSON.parse(data);
+        } catch {
+          return;
+        }
+
+        if (chunk.error?.message) throw new Error(chunk.error.message);
+        const token = chunk.choices?.[0]?.delta?.content;
+        if (!token) return;
+
+        streamTextRef.current += token;
+        setMessages((current) => current.map((message) => message.id === assistantMessage.id ? { ...message, content: streamTextRef.current } : message));
+      }
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split("\n\n"); buffer = events.pop() || "";
-        for (const event of events) {
-          const data = event.split("\n").filter((line) => line.startsWith("data:")) .map((line) => line.slice(5).trim()).join("");
-          if (!data || data === "[DONE]") continue;
-          try {
-            const chunk = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string }; finish_reason?: string }>; error?: { message?: string } };
-            if (chunk.error?.message) throw new Error(chunk.error.message);
-            const token = chunk.choices?.[0]?.delta?.content;
-            if (token) {
-              streamTextRef.current += token;
-              setMessages((current) => current.map((message) => message.id === assistantMessage.id ? { ...message, content: streamTextRef.current } : message));
-            }
-          } catch (parseError) {
-            if (parseError instanceof Error && !parseError.message.includes("JSON")) throw parseError;
-          }
-        }
+        const events = buffer.split(/\r?\n\r?\n/);
+        buffer = events.pop() || "";
+        events.forEach(consumeEvent);
       }
+
+      buffer += decoder.decode();
+      if (buffer.trim()) consumeEvent(buffer);
 
       if (!streamTextRef.current.trim()) throw new Error("The selected model returned an empty response. Please try again.");
       setMessages((current) => current.map((message) => message.id === assistantMessage.id ? { ...message, content: streamTextRef.current, streaming: false } : message));
@@ -139,15 +154,16 @@ export function AdvisorExperience() {
 
   return (
     <div className="flex h-dvh min-h-[650px] flex-col overflow-hidden bg-[#050816]">
-      <header className="z-20 border-b border-white/10 bg-[#050816]/92 backdrop-blur-xl"><div className="flex min-h-18 items-center justify-between gap-4 px-4 md:px-6"><div className="flex items-center gap-4"><Brand /><span className="hidden h-7 w-px bg-white/10 sm:block" /><div className="hidden sm:block"><p className="text-xs font-bold text-white">Bangladesh Business Advisor</p><p className="flex items-center gap-1.5 text-[10px] text-[#71809b]"><span className="size-1.5 rounded-full bg-[#35d49a]" /> OpenRouter connected</p></div></div><div className="flex items-center gap-2"><button type="button" onClick={resetChat} className="hidden min-h-11 items-center gap-2 rounded-xl px-3 text-xs font-bold text-[#8f9ab2] hover:bg-white/[.06] hover:text-white sm:flex"><RotateCcw size={16} /> New plan</button><button type="button" onClick={() => setNotesOpen(true)} className="relative flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[.045] px-3 text-xs font-bold text-[#b5bed1] hover:border-[#53e0ff]/30 lg:hidden"><NotebookPen size={17} /> Notes{pins.length > 0 && <span className="grid size-5 place-items-center rounded-full bg-[#7c5cff] text-[10px] text-white">{pins.length}</span>}</button><Link href="/" className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-[#9ca7be] hover:text-white" aria-label="Back to homepage"><ArrowLeft size={18} /></Link></div></div></header>
+      <header className="z-20 border-b border-white/10 bg-[#050816]/92 backdrop-blur-xl"><div className="flex min-h-18 items-center justify-between gap-4 px-4 md:px-6"><div className="flex items-center gap-4"><Brand /><span className="hidden h-7 w-px bg-white/10 sm:block" /><div className="hidden sm:block"><p className="text-xs font-bold text-white">Bangladesh Business Advisor</p><p className="flex items-center gap-1.5 text-[10px] text-[#71809b]"><span className="size-1.5 rounded-full bg-[#53e0ff]" /> AI planning workspace</p></div></div><div className="flex items-center gap-2"><button type="button" onClick={resetChat} className="hidden min-h-11 items-center gap-2 rounded-xl px-3 text-xs font-bold text-[#8f9ab2] hover:bg-white/[.06] hover:text-white sm:flex"><RotateCcw size={16} /> New plan</button><button type="button" onClick={() => setNotesOpen(true)} className="relative flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[.045] px-3 text-xs font-bold text-[#b5bed1] hover:border-[#53e0ff]/30 lg:hidden"><NotebookPen size={17} /> Notes{pins.length > 0 && <span className="grid size-5 place-items-center rounded-full bg-[#0891b2] text-[10px] text-white">{pins.length}</span>}</button><Link href="/" className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-[#9ca7be] hover:text-white" aria-label="Back to homepage"><ArrowLeft size={18} /></Link></div></div></header>
 
       <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_340px]">
         <main className="relative flex min-h-0 flex-col">
           <div className="soft-grid pointer-events-none absolute inset-0 opacity-25" />
+          <Image src="/brand/bizguide-logo.png" alt="" width={620} height={620} loading="eager" className="pointer-events-none absolute left-1/2 top-1/2 w-[min(70vw,620px)] -translate-x-1/2 -translate-y-1/2 opacity-[.035]" aria-hidden="true" />
           <div className="relative min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto grid max-w-4xl gap-6 px-4 py-7 md:px-8 md:py-9">
               {messages.map((message) => <AdvisorMessageCard key={message.id} message={message} onPin={addPin} pinnedTexts={pinnedTexts} />)}
-              {messages.length === 1 && <section className="ml-12 mt-1"><p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6f7b96]"><Lightbulb size={14} /> Try a planning prompt</p><div className="grid gap-2 sm:grid-cols-2">{starters.map((starter) => <button key={starter} type="button" onClick={() => void requestAdvice(starter)} className="min-h-14 rounded-xl border border-white/10 bg-white/[.025] px-4 py-3 text-left text-sm font-semibold leading-5 text-[#aeb7ca] hover:border-[#7c5cff]/35 hover:bg-[#7c5cff]/[.07] hover:text-white">{starter}</button>)}</div></section>}
+              {messages.length === 1 && <section className="ml-12 mt-1"><p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6f7b96]"><Lightbulb size={14} /> Try a planning prompt</p><div className="grid gap-2 sm:grid-cols-2">{starters.map((starter) => <button key={starter} type="button" onClick={() => void requestAdvice(starter)} className="min-h-14 rounded-xl border border-white/10 bg-white/[.025] px-4 py-3 text-left text-sm font-semibold leading-5 text-[#aeb7ca] hover:border-[#0891b2]/35 hover:bg-[#0891b2]/[.07] hover:text-white">{starter}</button>)}</div></section>}
               <div ref={scrollAnchorRef} />
             </div>
           </div>
@@ -155,7 +171,7 @@ export function AdvisorExperience() {
           <div className="relative border-t border-white/10 bg-[#070b17]/94 px-3 py-3 backdrop-blur-xl md:px-6 md:py-4">
             <div className="mx-auto max-w-4xl">
               {error && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/[.07] px-4 py-2.5 text-sm text-red-200" role="alert"><span>{error}</span>{lastUserText && !sending && <button type="button" onClick={retry} className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold hover:bg-red-300/10">Retry</button>}</div>}
-              <form onSubmit={submit} className="rounded-2xl border border-white/12 bg-[#0b1122] p-2 shadow-[0_18px_50px_rgba(0,0,0,.3)] focus-within:border-[#53e0ff]/35"><label htmlFor="advisor-composer" className="sr-only">Ask BizGuide AI</label><textarea ref={composerRef} id="advisor-composer" value={draft} onChange={(event) => { setDraft(event.target.value); setError(""); }} onKeyDown={handleKeyDown} rows={2} maxLength={4000} placeholder="Describe your idea, location, budget, or ask your next business question…" disabled={sending} className="max-h-40 min-h-14 w-full resize-none bg-transparent px-3 py-2 text-base leading-6 text-white outline-none placeholder:text-[#5f6a84] disabled:opacity-60" /><div className="flex items-center justify-between gap-3 px-2 pb-1"><p className="text-[10px] text-[#69758f]">Enter to send • Shift + Enter for a new line</p>{sending ? <button type="button" onClick={stop} className="grid size-10 place-items-center rounded-xl border border-red-400/20 bg-red-400/10 text-red-200" aria-label="Stop response"><Square size={15} className="fill-current" /></button> : <button type="submit" disabled={!draft.trim()} className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-[#7c5cff] to-[#b351dc] text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-35" aria-label="Send message"><Send size={17} /></button>}</div></form>
+              <form onSubmit={submit} className="rounded-2xl border border-white/12 bg-[#0b1122] p-2 shadow-[0_18px_50px_rgba(0,0,0,.3)] focus-within:border-[#53e0ff]/35"><label htmlFor="advisor-composer" className="sr-only">Ask BizGuide AI</label><textarea ref={composerRef} id="advisor-composer" value={draft} onChange={(event) => { setDraft(event.target.value); setError(""); }} onKeyDown={handleKeyDown} rows={2} maxLength={4000} placeholder="Describe your idea, location, budget, or ask your next business question…" disabled={sending} className="max-h-40 min-h-14 w-full resize-none bg-transparent px-3 py-2 text-base leading-6 text-white outline-none placeholder:text-[#5f6a84] disabled:opacity-60" /><div className="flex items-center justify-between gap-3 px-2 pb-1"><p className="text-[10px] text-[#69758f]">Enter to send • Shift + Enter for a new line</p>{sending ? <button type="button" onClick={stop} className="grid size-10 place-items-center rounded-xl border border-red-400/20 bg-red-400/10 text-red-200" aria-label="Stop response"><Square size={15} className="fill-current" /></button> : <button type="submit" disabled={!draft.trim()} className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-[#0891b2] to-[#2563eb] text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-35" aria-label="Send message"><Send size={17} /></button>}</div></form>
               <p className="mt-2 text-center text-[10px] text-[#59657e]">BizGuide can make mistakes. Verify legal, financial, pricing, and local market details with current official sources.</p>
             </div>
           </div>

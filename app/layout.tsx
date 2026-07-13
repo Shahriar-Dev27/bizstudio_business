@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: "BizGuide AI — Plan a smarter business in Bangladesh",
   description:
     "A guided business planning prototype for exploring location, budget, timing, setup needs, and market considerations in Bangladesh.",
+  icons: {
+    icon: "/brand/bizguide-logo.png",
+    apple: "/brand/bizguide-logo.png",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

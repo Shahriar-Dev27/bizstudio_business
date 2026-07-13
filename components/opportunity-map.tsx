@@ -37,13 +37,13 @@ function BangladeshScene({ active }: { active: boolean }) {
     <group ref={group} rotation={[-.36, -.12, -.12]}>
       <mesh>
         <extrudeGeometry args={[shape, { depth: .34, bevelEnabled: true, bevelSize: .08, bevelThickness: .08, bevelSegments: 3 }]} />
-        <meshStandardMaterial color="#5941c9" roughness={.42} metalness={.24} />
+        <meshStandardMaterial color="#0891b2" roughness={.42} metalness={.24} />
       </mesh>
       {cities.map((city, index) => (
         <group key={city.name} position={city.position}>
           <mesh position={[0,0,.18]}>
             <sphereGeometry args={[.11, 20, 20]} />
-            <meshStandardMaterial color={index === 0 ? "#fd5fb4" : "#53e0ff"} emissive={index === 0 ? "#fd5fb4" : "#53e0ff"} emissiveIntensity={.9} />
+            <meshStandardMaterial color={index === 0 ? "#53e0ff" : "#53e0ff"} emissive={index === 0 ? "#53e0ff" : "#53e0ff"} emissiveIntensity={.9} />
           </mesh>
           <mesh position={[0,0,.08]}><ringGeometry args={[.18,.22,24]} /><meshBasicMaterial color="#ffffff" transparent opacity={.7} side={THREE.DoubleSide} /></mesh>
           <Html position={[0,0,.68]} center distanceFactor={7} style={{ pointerEvents: "none" }}>
@@ -64,7 +64,7 @@ export function OpportunityMap({ active }: { active: boolean }) {
       <Canvas camera={{ position: [0,0,8.2], fov: 42 }} dpr={[1,1.5]} frameloop={active ? "always" : "demand"}>
         <ambientLight intensity={1.45} />
         <directionalLight position={[4,6,8]} intensity={2.5} color="#dffaff" />
-        <pointLight position={[-4,-2,4]} intensity={18} color="#7c5cff" />
+        <pointLight position={[-4,-2,4]} intensity={18} color="#0891b2" />
         <BangladeshScene active={active} />
         <ContactShadows position={[0,-3.15,0]} opacity={.18} scale={8} blur={2.5} far={6} />
       </Canvas>

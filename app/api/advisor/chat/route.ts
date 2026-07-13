@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: upstream.status || 502 });
     }
 
+    // ponytail: proxy OpenRouter's native SSE stream; transform it here only if server-side moderation or usage metering is added.
     return new Response(upstream.body, {
       status: 200,
       headers: {

@@ -20,7 +20,7 @@ export function HeroForm() {
 
   return (
     <div>
-      <form onSubmit={submit} className="relative rounded-[22px] border border-[#7c5cff]/30 bg-[#0a1020]/90 p-2 shadow-[0_24px_70px_rgba(0,0,0,.4),0_0_50px_rgba(124,92,255,.1)] backdrop-blur">
+      <form onSubmit={submit} className="relative rounded-[22px] border border-[#0891b2]/30 bg-[#0a1020]/90 p-2 shadow-[0_24px_70px_rgba(0,0,0,.4),0_0_50px_rgba(8,145,178,.1)] backdrop-blur">
         <label htmlFor="business-idea" className="sr-only">Describe your business idea</label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="flex min-h-14 flex-1 items-center gap-3 px-3">

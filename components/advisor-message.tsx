@@ -1,8 +1,10 @@
 "use client";
 
-import { Bot, Pin, UserRound } from "lucide-react";
+import Image from "next/image";
+import { Pin, UserRound } from "lucide-react";
 import type { ChatMessage } from "@/types/advisor";
 
+// ponytail: support only the headings, bullets, and bold text the advisor emits; add a Markdown dependency only when links/tables/code are required.
 function InlineText({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return <>{parts.map((part, index) => part.startsWith("**") && part.endsWith("**") ? <strong key={index} className="font-bold text-white">{part.slice(2, -2)}</strong> : <span key={index}>{part}</span>)}</>;
@@ -18,9 +20,9 @@ export function AdvisorMessageCard({ message, onPin, pinnedTexts }: { message: C
 
   return (
     <article className={`group flex gap-3 ${assistant ? "items-start" : "items-start justify-end"}`} aria-label={assistant ? "BizGuide AI message" : "Your message"}>
-      {assistant && <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#53e0ff] to-[#7c5cff] text-white shadow-[0_8px_24px_rgba(83,224,255,.14)]"><Bot size={18} /></span>}
-      <div className={`max-w-[88%] rounded-2xl px-4 py-3.5 md:max-w-[82%] ${assistant ? "rounded-tl-sm border border-white/10 bg-white/[.045] text-[#c6cddd]" : "rounded-tr-sm bg-gradient-to-br from-[#7658f5] to-[#5736c9] text-white shadow-[0_12px_30px_rgba(87,54,201,.2)]"}`}>
-        {message.streaming && !message.content ? <div className="flex min-h-7 items-center gap-1.5" aria-label="BizGuide is thinking"><i className="size-2 animate-bounce rounded-full bg-[#53e0ff] [animation-delay:-.2s]" /><i className="size-2 animate-bounce rounded-full bg-[#7c5cff] [animation-delay:-.1s]" /><i className="size-2 animate-bounce rounded-full bg-[#fd5fb4]" /></div> : (
+      {assistant && <span className="mt-1 grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-[#53e0ff]/20 bg-[#050816] shadow-[0_8px_24px_rgba(83,224,255,.14)]"><Image src="/brand/bizguide-logo.png" alt="BizGuide AI" width={48} height={48} loading="eager" className="max-w-none scale-[1.3]" /></span>}
+      <div className={`max-w-[88%] rounded-2xl px-4 py-3.5 md:max-w-[82%] ${assistant ? "rounded-tl-sm border border-white/10 bg-white/[.045] text-[#c6cddd]" : "rounded-tr-sm bg-gradient-to-br from-[#0891b2] to-[#0369a1] text-white shadow-[0_12px_30px_rgba(8,105,148,.2)]"}`}>
+        {message.streaming && !message.content ? <div className="flex min-h-7 items-center gap-1.5" aria-label="BizGuide is thinking"><i className="size-2 animate-bounce rounded-full bg-[#53e0ff] [animation-delay:-.2s]" /><i className="size-2 animate-bounce rounded-full bg-[#0891b2] [animation-delay:-.1s]" /><i className="size-2 animate-bounce rounded-full bg-[#53e0ff]" /></div> : (
           <div className="grid gap-2.5 text-[15px] leading-7">
             {lines.map((line, index) => {
               const trimmed = line.trim();
