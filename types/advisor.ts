@@ -28,6 +28,21 @@ export type AdvisorMessage = {
   quickActions?: string[];
 };
 
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: number;
+  streaming?: boolean;
+};
+
+export type PinnedNote = {
+  id: string;
+  text: string;
+  sourceMessageId?: string;
+  createdAt: number;
+};
+
 export type ReportSection = { title: string; items: string[] };
 export type AnalysisReport = {
   title: string;

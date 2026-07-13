@@ -2,114 +2,170 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Bot, Check, RotateCcw, Send, Sparkles, UserRound } from "lucide-react";
-import { FormEvent, useMemo, useRef, useState } from "react";
-import { advisorQuestions, mockAdvisorService } from "@/lib/advisor-service";
-import type { AnalysisReport as Report, BusinessProfile } from "@/types/advisor";
-import { AnalysisReport } from "./analysis-report";
+import { ArrowLeft, Check, Lightbulb, NotebookPen, RotateCcw, Send, Square } from "lucide-react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ADVISOR_WELCOME } from "@/lib/advisor-prompt";
+import type { ChatMessage, PinnedNote } from "@/types/advisor";
+import { AdvisorMessageCard } from "./advisor-message";
 import { Brand } from "./brand";
+import { PinnedNotes } from "./pinned-notes";
 
-type ProfileDraft = Partial<BusinessProfile>;
+const PIN_STORAGE_KEY = "bizguide-pinned-notes-v1";
+const starters = [
+  "I have ৳2 lakh. Suggest realistic businesses for my district.",
+  "Analyze the best area and season for my business idea.",
+  "Help me test demand before I rent a shop.",
+  "Create a low-risk 30-day launch plan.",
+];
+
+function makeMessage(role: ChatMessage["role"], content: string, streaming = false): ChatMessage {
+  return { id: crypto.randomUUID(), role, content, createdAt: Date.now(), streaming };
+}
 
 export function AdvisorExperience() {
   const searchParams = useSearchParams();
-  const initialIdea = (searchParams.get("idea") || "").slice(0, 180);
-  const [profile, setProfile] = useState<ProfileDraft>(initialIdea ? { idea: initialIdea } : {});
-  const [step, setStep] = useState(0);
+  const initialIdea = (searchParams.get("idea") || "").slice(0, 500);
+  const [messages, setMessages] = useState<ChatMessage[]>([makeMessage("assistant", ADVISOR_WELCOME)]);
   const [draft, setDraft] = useState(initialIdea);
-  const [customDraft, setCustomDraft] = useState("");
+  const [pins, setPins] = useState<PinnedNote[]>([]);
+  const [pinsReady, setPinsReady] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [thinking, setThinking] = useState(false);
-  const [report, setReport] = useState<Report | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pinNotice, setPinNotice] = useState("");
+  const [lastUserText, setLastUserText] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
+  const scrollAnchorRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const streamTextRef = useRef("");
 
-  const question = advisorQuestions[step];
-  const completed = useMemo(() => advisorQuestions.slice(0, step).filter((item) => profile[item.id]), [profile, step]);
-  const progress = Math.round(((step + 1) / advisorQuestions.length) * 100);
+  const pinnedTexts = useMemo(() => new Set(pins.map((note) => note.text.trim().toLowerCase())), [pins]);
 
-  function choose(value: string) { setDraft(value); setCustomDraft(""); setError(""); }
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(PIN_STORAGE_KEY) || "[]") as PinnedNote[];
+        if (Array.isArray(saved)) setPins(saved.filter((note) => note && typeof note.text === "string").slice(0, 60));
+      } catch { /* Ignore corrupted local notes and start clean. */ }
+      setPinsReady(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    const value = (customDraft.trim() || draft.trim());
-    if (value.length < (question.minimumLength || 1)) { setError("Please add a little more detail before continuing."); return; }
-    const nextProfile = { ...profile, [question.id]: value };
-    setProfile(nextProfile);
-    setError("");
+  useEffect(() => {
+    if (pinsReady) window.localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(pins));
+  }, [pins, pinsReady]);
 
-    if (step === advisorQuestions.length - 1) {
-      setThinking(true);
-      const result = await mockAdvisorService.analyze(nextProfile as BusinessProfile);
-      setReport(result);
-      setThinking(false);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
+  useEffect(() => {
+    scrollAnchorRef.current?.scrollIntoView({ behavior: sending ? "smooth" : "auto", block: "end" });
+  }, [messages, sending]);
 
-    setThinking(true);
-    timeoutRef.current = setTimeout(() => {
-      const nextQuestion = advisorQuestions[step + 1];
-      setStep((valueStep) => valueStep + 1);
-      setDraft(nextProfile[nextQuestion.id] || "");
-      setCustomDraft("");
-      setThinking(false);
-    }, 360);
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  function addPin(text: string, sourceMessageId?: string) {
+    const clean = text.trim().slice(0, 500);
+    if (!clean) return;
+    if (pins.some((note) => note.text.trim().toLowerCase() === clean.toLowerCase())) { setPinNotice("Already pinned"); window.setTimeout(() => setPinNotice(""), 1400); return; }
+    setPins((current) => [{ id: crypto.randomUUID(), text: clean, sourceMessageId, createdAt: Date.now() }, ...current]);
+    setPinNotice("Pinned to notes");
+    window.setTimeout(() => setPinNotice(""), 1400);
   }
 
-  function goBack() {
-    if (thinking || step === 0) return;
-    const previous = advisorQuestions[step - 1];
-    setStep((value) => value - 1);
-    setDraft(profile[previous.id] || "");
-    setCustomDraft("");
-    setError("");
+  function updatePin(id: string, text: string) { setPins((current) => current.map((note) => note.id === id ? { ...note, text } : note)); }
+  function removePin(id: string) { setPins((current) => current.filter((note) => note.id !== id)); }
+
+  async function requestAdvice(text: string) {
+    if (sending) return;
+    const clean = text.trim();
+    if (clean.length < 2) { setError("Describe your question or business idea first."); return; }
+    if (clean.length > 4000) { setError("Keep each message under 4,000 characters."); return; }
+
+    const userMessage = makeMessage("user", clean);
+    const assistantMessage = makeMessage("assistant", "", true);
+    const requestMessages = [...messages, userMessage].filter((message) => !message.streaming).map(({ role, content }) => ({ role, content }));
+    setLastUserText(clean);
+    setMessages((current) => [...current, userMessage, assistantMessage]);
+    setDraft(""); setError(""); setSending(true);
+    const controller = new AbortController(); abortRef.current = controller;
+
+    try {
+      const response = await fetch("/api/advisor/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: requestMessages }), signal: controller.signal });
+      if (!response.ok || !response.body) {
+        const payload = await response.json().catch(() => ({ error: "The advisor could not respond." })) as { error?: string };
+        throw new Error(payload.error || "The advisor could not respond.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      streamTextRef.current = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n"); buffer = events.pop() || "";
+        for (const event of events) {
+          const data = event.split("\n").filter((line) => line.startsWith("data:")) .map((line) => line.slice(5).trim()).join("");
+          if (!data || data === "[DONE]") continue;
+          try {
+            const chunk = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string }; finish_reason?: string }>; error?: { message?: string } };
+            if (chunk.error?.message) throw new Error(chunk.error.message);
+            const token = chunk.choices?.[0]?.delta?.content;
+            if (token) {
+              streamTextRef.current += token;
+              setMessages((current) => current.map((message) => message.id === assistantMessage.id ? { ...message, content: streamTextRef.current } : message));
+            }
+          } catch (parseError) {
+            if (parseError instanceof Error && !parseError.message.includes("JSON")) throw parseError;
+          }
+        }
+      }
+
+      if (!streamTextRef.current.trim()) throw new Error("The selected model returned an empty response. Please try again.");
+      setMessages((current) => current.map((message) => message.id === assistantMessage.id ? { ...message, content: streamTextRef.current, streaming: false } : message));
+    } catch (requestError) {
+      setMessages((current) => current.filter((message) => message.id !== assistantMessage.id));
+      if (requestError instanceof DOMException && requestError.name === "AbortError") setError("Response stopped. You can edit your question and try again.");
+      else setError(requestError instanceof Error ? requestError.message : "The advisor is temporarily unavailable.");
+    } finally { setSending(false); abortRef.current = null; composerRef.current?.focus(); }
   }
 
-  function restart() {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setProfile({}); setStep(0); setDraft(""); setCustomDraft(""); setError(""); setThinking(false); setReport(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  if (report) return <div className="container-shell pt-10"><AnalysisReport report={report} onRestart={restart} /></div>;
+  function submit(event: FormEvent) { event.preventDefault(); void requestAdvice(draft); }
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); if (draft.trim()) void requestAdvice(draft); } }
+  function stop() { abortRef.current?.abort(); }
+  function resetChat() { abortRef.current?.abort(); setMessages([makeMessage("assistant", ADVISOR_WELCOME)]); setDraft(""); setError(""); setLastUserText(""); }
+  function retry() { if (lastUserText) void requestAdvice(lastUserText); }
 
   return (
-    <div className="soft-grid min-h-dvh bg-[#050816]">
-      <header className="border-b border-white/10 bg-[#050816]/85 backdrop-blur"><div className="container-shell flex min-h-18 items-center justify-between gap-4"><Brand /><Link href="/" className="btn-secondary !min-h-11 !px-4"><ArrowLeft size={17} /> <span className="hidden sm:inline">Back home</span></Link></div></header>
-      <main className="container-shell py-8 md:py-12">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><span className="eyebrow"><Sparkles size={15} /> Guided planning demo</span><h1 className="mt-2 text-2xl font-bold md:text-3xl">Let&apos;s understand your idea.</h1></div><button type="button" onClick={restart} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-[#99a3ba] hover:bg-white/[.06] hover:text-[#53e0ff]"><RotateCcw size={17} /> Restart</button></div>
+    <div className="flex h-dvh min-h-[650px] flex-col overflow-hidden bg-[#050816]">
+      <header className="z-20 border-b border-white/10 bg-[#050816]/92 backdrop-blur-xl"><div className="flex min-h-18 items-center justify-between gap-4 px-4 md:px-6"><div className="flex items-center gap-4"><Brand /><span className="hidden h-7 w-px bg-white/10 sm:block" /><div className="hidden sm:block"><p className="text-xs font-bold text-white">Bangladesh Business Advisor</p><p className="flex items-center gap-1.5 text-[10px] text-[#71809b]"><span className="size-1.5 rounded-full bg-[#35d49a]" /> OpenRouter connected</p></div></div><div className="flex items-center gap-2"><button type="button" onClick={resetChat} className="hidden min-h-11 items-center gap-2 rounded-xl px-3 text-xs font-bold text-[#8f9ab2] hover:bg-white/[.06] hover:text-white sm:flex"><RotateCcw size={16} /> New plan</button><button type="button" onClick={() => setNotesOpen(true)} className="relative flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[.045] px-3 text-xs font-bold text-[#b5bed1] hover:border-[#53e0ff]/30 lg:hidden"><NotebookPen size={17} /> Notes{pins.length > 0 && <span className="grid size-5 place-items-center rounded-full bg-[#7c5cff] text-[10px] text-white">{pins.length}</span>}</button><Link href="/" className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-[#9ca7be] hover:text-white" aria-label="Back to homepage"><ArrowLeft size={18} /></Link></div></div></header>
 
-          <div className="mb-5" aria-label={`Step ${step + 1} of ${advisorQuestions.length}`}><div className="flex justify-between text-xs font-bold text-[#8b96af]"><span>QUESTION {step + 1} OF {advisorQuestions.length}</span><span>{progress}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-gradient-to-r from-[#7c5cff] to-[#53e0ff] transition-[width] duration-300" style={{ width: `${progress}%` }} /></div></div>
-
-          <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]">
-            <aside className="glass hidden rounded-[24px] p-6 text-white lg:block">
-              <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-[#53e0ff] to-[#7c5cff]"><Bot size={21} /></span><div><p className="font-display font-bold">BizGuide</p><p className="text-xs text-[#9ca7be]">Planning assistant • Demo</p></div></div>
-              <div className="mt-8 grid gap-5">
-                {completed.length === 0 && <p className="text-sm leading-6 text-[#9ca7be]">Your answers will appear here as we build a clearer picture of the idea.</p>}
-                {completed.map((item) => <div key={item.id} className="border-l-2 border-[#53e0ff] pl-4"><p className="text-xs font-bold uppercase tracking-wide text-[#717d99]">{item.id}</p><p className="mt-1 text-sm text-white">{profile[item.id]}</p></div>)}
-              </div>
-              <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.045] p-4 text-xs leading-5 text-[#9ca7be]">Your answers stay in this browser session. This frontend prototype does not save or send them to an AI service.</div>
-            </aside>
-
-            <section className="card min-h-[520px] p-5 md:p-8" aria-live="polite">
-              <div className="flex gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#7c5cff]/15 text-[#a28fff]"><Bot size={20} /></span><div className="max-w-[90%] rounded-2xl rounded-tl-sm border border-white/10 bg-white/[.045] px-4 py-3"><p className="font-semibold">{question.prompt}</p><p className="mt-1 text-sm text-[#9ca7be]">{question.helper}</p></div></div>
-
-              {thinking ? <div className="mt-6 flex items-center gap-3 text-sm font-semibold text-[#9ca7be]"><span className="grid size-9 place-items-center rounded-xl bg-[#7c5cff]/15 text-[#a28fff]"><Bot size={17} /></span><span className="flex gap-1" aria-label="BizGuide is thinking"><i className="size-2 animate-bounce rounded-full bg-[#53e0ff] [animation-delay:-.2s]" /><i className="size-2 animate-bounce rounded-full bg-[#7c5cff] [animation-delay:-.1s]" /><i className="size-2 animate-bounce rounded-full bg-[#fd5fb4]" /></span>{step === advisorQuestions.length - 1 ? "Building your planning brief…" : "Preparing the next question…"}</div> : (
-                <form onSubmit={submit} className="mt-8">
-                  {question.inputType === "choices" ? <div className="grid gap-2 sm:grid-cols-2">{question.choices?.map((choice) => { const selected = draft === choice && !customDraft; return <button type="button" key={choice} onClick={() => choose(choice)} aria-pressed={selected} className={`flex min-h-13 items-center justify-between rounded-xl border px-4 text-left text-sm font-bold ${selected ? "border-[#53e0ff]/55 bg-[#53e0ff]/10 text-[#8decff] shadow-[0_0_0_1px_rgba(83,224,255,.25)]" : "border-white/10 bg-white/[.035] text-[#c6ccdc] hover:border-[#7c5cff]/45 hover:bg-[#7c5cff]/[.07]"}`}>{choice}{selected && <Check size={17} />}</button>; })}</div> : null}
-
-                  {(question.inputType === "text" || question.id === "location" || question.id === "category") && <div className={question.inputType === "choices" ? "mt-5" : ""}><label htmlFor="answer" className="mb-2 block text-sm font-bold">{question.inputType === "choices" ? "Or type your own" : "Your answer"}</label><textarea id="answer" autoFocus value={question.inputType === "choices" ? customDraft : draft} onChange={(e) => { if (question.inputType === "choices") setCustomDraft(e.target.value); else setDraft(e.target.value); setError(""); }} maxLength={220} rows={3} placeholder={question.inputType === "choices" ? "Enter a specific answer…" : question.placeholder} className="w-full resize-none rounded-2xl border border-white/10 bg-[#070b17] px-4 py-3 text-base text-white outline-none placeholder:text-[#65708b] focus:border-[#53e0ff]/60 focus:shadow-[0_0_0_3px_rgba(83,224,255,.1)]" /></div>}
-
-                  {error && <p role="alert" className="mt-3 text-sm font-semibold text-red-700">{error}</p>}
-                  <div className="mt-7 flex items-center justify-between gap-3"><button type="button" onClick={goBack} disabled={step === 0} className="btn-secondary disabled:cursor-not-allowed disabled:opacity-40"><ArrowLeft size={18} /> Back</button><button type="submit" className="btn-primary" disabled={!draft.trim() && !customDraft.trim()}>{step === advisorQuestions.length - 1 ? "Create my brief" : "Continue"}{step === advisorQuestions.length - 1 ? <Send size={17} /> : <ArrowRight size={18} />}</button></div>
-                </form>
-              )}
-              <div className="mt-8 flex items-center gap-2 border-t border-white/10 pt-5 text-xs text-[#79849f]"><UserRound size={15} /> You can go back and change any answer before generating the report.</div>
-            </section>
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <main className="relative flex min-h-0 flex-col">
+          <div className="soft-grid pointer-events-none absolute inset-0 opacity-25" />
+          <div className="relative min-h-0 flex-1 overflow-y-auto">
+            <div className="mx-auto grid max-w-4xl gap-6 px-4 py-7 md:px-8 md:py-9">
+              {messages.map((message) => <AdvisorMessageCard key={message.id} message={message} onPin={addPin} pinnedTexts={pinnedTexts} />)}
+              {messages.length === 1 && <section className="ml-12 mt-1"><p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6f7b96]"><Lightbulb size={14} /> Try a planning prompt</p><div className="grid gap-2 sm:grid-cols-2">{starters.map((starter) => <button key={starter} type="button" onClick={() => void requestAdvice(starter)} className="min-h-14 rounded-xl border border-white/10 bg-white/[.025] px-4 py-3 text-left text-sm font-semibold leading-5 text-[#aeb7ca] hover:border-[#7c5cff]/35 hover:bg-[#7c5cff]/[.07] hover:text-white">{starter}</button>)}</div></section>}
+              <div ref={scrollAnchorRef} />
+            </div>
           </div>
-        </div>
-      </main>
+
+          <div className="relative border-t border-white/10 bg-[#070b17]/94 px-3 py-3 backdrop-blur-xl md:px-6 md:py-4">
+            <div className="mx-auto max-w-4xl">
+              {error && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/[.07] px-4 py-2.5 text-sm text-red-200" role="alert"><span>{error}</span>{lastUserText && !sending && <button type="button" onClick={retry} className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold hover:bg-red-300/10">Retry</button>}</div>}
+              <form onSubmit={submit} className="rounded-2xl border border-white/12 bg-[#0b1122] p-2 shadow-[0_18px_50px_rgba(0,0,0,.3)] focus-within:border-[#53e0ff]/35"><label htmlFor="advisor-composer" className="sr-only">Ask BizGuide AI</label><textarea ref={composerRef} id="advisor-composer" value={draft} onChange={(event) => { setDraft(event.target.value); setError(""); }} onKeyDown={handleKeyDown} rows={2} maxLength={4000} placeholder="Describe your idea, location, budget, or ask your next business question…" disabled={sending} className="max-h-40 min-h-14 w-full resize-none bg-transparent px-3 py-2 text-base leading-6 text-white outline-none placeholder:text-[#5f6a84] disabled:opacity-60" /><div className="flex items-center justify-between gap-3 px-2 pb-1"><p className="text-[10px] text-[#69758f]">Enter to send • Shift + Enter for a new line</p>{sending ? <button type="button" onClick={stop} className="grid size-10 place-items-center rounded-xl border border-red-400/20 bg-red-400/10 text-red-200" aria-label="Stop response"><Square size={15} className="fill-current" /></button> : <button type="submit" disabled={!draft.trim()} className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-[#7c5cff] to-[#b351dc] text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-35" aria-label="Send message"><Send size={17} /></button>}</div></form>
+              <p className="mt-2 text-center text-[10px] text-[#59657e]">BizGuide can make mistakes. Verify legal, financial, pricing, and local market details with current official sources.</p>
+            </div>
+          </div>
+        </main>
+
+        <div className="hidden min-h-0 border-l border-white/10 lg:block"><PinnedNotes notes={pins} onAdd={(text) => addPin(text)} onUpdate={updatePin} onRemove={removePin} /></div>
+      </div>
+
+      {notesOpen && <div className="fixed inset-0 z-50 lg:hidden"><button type="button" className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setNotesOpen(false)} aria-label="Close notes overlay" /><div className="absolute inset-y-0 right-0 w-[min(92vw,380px)] border-l border-white/10 shadow-2xl"><PinnedNotes notes={pins} onAdd={(text) => addPin(text)} onUpdate={updatePin} onRemove={removePin} onClose={() => setNotesOpen(false)} /></div></div>}
+      {pinNotice && <div className="fixed bottom-24 left-1/2 z-[60] flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#53e0ff]/20 bg-[#0b1424]/95 px-4 py-2 text-xs font-bold text-[#8decff] shadow-2xl" role="status"><Check size={14} />{pinNotice}</div>}
     </div>
   );
 }
