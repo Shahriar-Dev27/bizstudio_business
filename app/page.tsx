@@ -1,11 +1,15 @@
+import "./marketing.css";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, BadgeCheck, Banknote, CalendarDays, Check, ChevronDown, CircleDot, FileCheck2, Fingerprint, Lightbulb, MapPin, MessageSquareText, Radar, ScanSearch, ShieldCheck, Sparkles, TrendingUp, UsersRound, Zap } from "lucide-react";
+import { IBM_Plex_Mono, Josefin_Slab, Space_Grotesk } from "next/font/google";
+import { ArrowRight, BadgeCheck, Banknote, CalendarDays, Check, ChevronDown, CircleDot, FileCheck2, Fingerprint, Lightbulb, MapPin, MessageSquareText, Radar, ScanSearch, ShieldCheck, Sparkles, UsersRound, Zap } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
-import { HeroForm } from "@/components/hero-form";
-import { MapExperience } from "@/components/map-experience";
 import { Brand } from "@/components/brand";
 import { BusinessBento } from "@/components/business-bento";
+import { HeroSection } from "@/components/marketing/hero-section";
+
+// Self-hosted at build time with font-display: swap; the CSS stacks fall back to Arial / ui-monospace.
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "700"], display: "swap", variable: "--font-mk-sans" });
+const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], display: "swap", variable: "--font-mk-mono" });
 
 const steps = [
   { number: "01", icon: MessageSquareText, title: "Tell us the reality", text: "Share the idea, location, budget, experience, target customer, and timeline." },
@@ -21,39 +25,18 @@ const faqs = [
 ];
 
 const categories = ["Food & beverage", "Retail", "Online business", "Services", "Agriculture", "Manufacturing", "Local commerce"];
+const josefinSlab = Josefin_Slab({ subsets: ["latin"], style: ["normal", "italic"], display: "swap", variable: "--font-mk-slab", fallback: ["Georgia", "serif"] });
 
 export default function HomePage() {
   return (
-    <>
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[#11182c] focus:px-4 focus:py-3">Skip to content</a>
+    <div className={`marketing-page ${spaceGrotesk.variable} ${plexMono.variable} ${josefinSlab.variable}`}>
+      <a href="#main" className="mk-skip-link">Skip to content</a>
       <SiteHeader />
       <main id="main">
-        {/* Immersive product hero */}
-        <section className="soft-grid relative min-h-[calc(100dvh-72px)] overflow-hidden border-b border-white/10 pb-18 pt-14 lg:pb-24 lg:pt-20">
-          <div className="noise-layer pointer-events-none absolute inset-0 opacity-[.12]" />
-          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden" aria-hidden="true">
-            <Image src="/brand/bizguide-hero-mark.png" alt="" width={1536} height={1536} priority className="h-[min(108vw,1180px)] w-[min(108vw,1180px)] max-w-none object-contain opacity-[.36] mix-blend-screen [mask-image:radial-gradient(circle,black_22%,rgba(0,0,0,.72)_50%,transparent_76%)]" />
-          </div>
-          <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-r from-[#050816]/90 via-[#050816]/48 to-[#050816]/68" />
-          <div className="glow-orb -left-48 top-4 size-[520px] bg-[#0369a1]" />
-          <div className="glow-orb -right-36 top-12 size-[520px] bg-[#03b8dd]" />
-          <div className="container-shell relative grid items-center gap-12 lg:grid-cols-[1.02fr_.98fr]">
-            <div className="relative z-10">
-              <div className="eyebrow mb-7 rounded-full border border-[#53e0ff]/20 bg-[#53e0ff]/[.06] px-3.5 py-2"><span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-[#53e0ff] opacity-70" /><span className="relative inline-flex size-2 rounded-full bg-[#53e0ff]" /></span> Bangladesh business intelligence, simplified</div>
-              <h1 className="max-w-[760px] text-[clamp(3rem,6.4vw,5.9rem)] font-extrabold tracking-[-.065em]">Your idea has signals. <span className="gradient-text">Learn to read them.</span></h1>
-              <p className="mt-7 max-w-[650px] text-lg leading-8 text-[#b6bed1] md:text-xl">From a rough thought to a location-aware, budget-conscious first plan—before you commit the money.</p>
-              <div className="mt-9"><HeroForm /></div>
-              <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-[#aab3c8]">{["No sign-up", "Bangladesh-first", "Assumptions made visible"].map((item) => <span key={item} className="flex items-center gap-2"><span className="grid size-5 place-items-center rounded-full bg-[#35d49a]/15 text-[#55e4b3]"><Check size={13} /></span>{item}</span>)}</div>
-            </div>
-            <div className="relative">
-              <div className="absolute -left-7 top-12 z-20 hidden rounded-2xl border border-[#53e0ff]/20 bg-[#081020]/90 p-4 shadow-2xl backdrop-blur xl:block float-soft"><div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-xl bg-[#35d49a]/15 text-[#55e4b3]"><TrendingUp size={21} /></span><div><p className="text-[11px] font-bold uppercase tracking-widest text-[#7f8aa5]">Signal detected</p><p className="font-display font-bold">Location × demand</p></div></div></div>
-              <div className="signal-line rounded-[32px] border border-[#53e0ff]/25 bg-[#0a1022]/75 p-3 shadow-[0_40px_120px_rgba(0,0,0,.5)] backdrop-blur"><MapExperience /></div>
-              <div className="absolute -bottom-4 right-4 z-20 hidden rounded-2xl border border-[#53e0ff]/20 bg-[#081020]/92 px-4 py-3 shadow-2xl backdrop-blur sm:block"><p className="text-[10px] font-bold uppercase tracking-widest text-[#7f8aa5]">Live planning lens</p><div className="mt-1 flex items-center gap-2 text-sm font-bold"><ScanSearch size={17} className="text-[#53e0ff]" /> 6 decision angles</div></div>
-            </div>
-          </div>
-          <div className="container-shell relative mt-14 grid grid-cols-3 gap-3 border-t border-white/10 pt-7 md:max-w-2xl md:ml-auto md:mr-auto"><Metric value="07" label="focused questions" /><Metric value="06" label="planning lenses" /><Metric value="01" label="clear brief" /></div>
-        </section>
+        <HeroSection />
 
+        {/* Legacy dark content: replaced section by section in Tasks 2-5. */}
+        <div className="mk-legacy">
         {/* Moving market categories */}
         <div className="overflow-hidden border-b border-white/10 bg-[#080c19] py-4" aria-label="Supported business categories"><div className="marquee-track flex items-center gap-3 pr-3">{[...categories,...categories].map((item,index) => <span key={`${item}-${index}`} className="flex items-center gap-3 whitespace-nowrap rounded-full border border-white/10 bg-white/[.035] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#9ca6bd]"><CircleDot size={12} className="text-[#53e0ff]" />{item}</span>)}</div></div>
 
@@ -91,10 +74,10 @@ export default function HomePage() {
         <section className="section-pad border-t border-white/10 bg-[#080c19]"><div className="container-shell grid gap-12 lg:grid-cols-[.9fr_1.1fr]"><div className="relative overflow-hidden rounded-[30px] border border-[#0891b2]/25 bg-gradient-to-br from-[#0b1625] to-[#090d1c] p-8 md:p-11"><div className="glow-orb -right-24 -top-24 size-64 bg-[#0891b2] opacity-30" /><ShieldCheck className="relative text-[#53e0ff]" size={38} /><h2 className="relative mt-7 text-3xl font-extrabold">Trust begins with knowing the limits.</h2><p className="relative mt-5 text-lg text-[#b2b9cc]">The prototype does not pretend demonstration data is market truth. It shows assumptions, uncertainties, and exactly what needs local verification.</p><div className="relative mt-8 grid gap-3">{["Every generated brief is labelled", "No guarantee language or invented proof", "Your idea is not sent to an AI yet"].map(item => <div key={item} className="flex gap-3 rounded-xl border border-white/10 bg-white/[.04] p-3 text-sm"><BadgeCheck className="mt-0.5 shrink-0 text-[#55e4b3]" size={18} />{item}</div>)}</div></div><div><span className="eyebrow">Questions before you begin</span><h2 className="mt-5 text-3xl font-extrabold md:text-4xl">Clear expectations. Better decisions.</h2><div className="mt-8 divide-y divide-white/10">{faqs.map(([question,answer]) => <details key={question} className="group py-4"><summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 font-display font-bold">{question}<ChevronDown className="shrink-0 text-[#0891b2] transition-transform group-open:rotate-180" size={20} /></summary><p className="pb-2 pr-8 text-[#a8b0c5]">{answer}</p></details>)}</div></div></div></section>
 
         <section className="relative overflow-hidden py-24"><div className="glow-orb left-1/4 top-1/2 size-[400px] bg-[#0369a1]" /><div className="container-shell relative"><div className="glass overflow-hidden rounded-[34px] px-6 py-16 text-center md:px-14"><div className="noise-layer pointer-events-none absolute inset-0 opacity-[.08]" /><div className="relative mx-auto max-w-3xl"><span className="eyebrow"><Lightbulb size={15} /> The idea is only the beginning</span><h2 className="mt-5 text-4xl font-extrabold md:text-6xl">Make your next move <span className="gradient-text">evidence-led.</span></h2><p className="mx-auto mt-6 max-w-xl text-lg text-[#a8b0c5]">Seven focused questions. One practical starting brief. Zero false promises.</p><Link href="/advisor" className="btn-primary mt-9">Analyze my business idea <ArrowRight size={18} /></Link></div></div></div></section>
+        </div>
       </main>
-      <footer className="border-t border-white/10 bg-[#050711] py-9"><div className="container-shell flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center"><Brand /><p className="max-w-xl text-sm text-[#818ba4]">Planning and research prototype. Not financial, legal, or investment advice.</p><p className="text-sm text-[#818ba4]">© 2026 BizGuide AI</p></div></footer>
-    </>
+      <footer className="mk-legacy border-t border-white/10 bg-[#050711] py-9"><div className="container-shell flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center"><Brand /><p className="max-w-xl text-sm text-[#818ba4]">Planning and research prototype. Not financial, legal, or investment advice.</p><p className="text-sm text-[#818ba4]">© 2026 BizGuide AI</p></div></footer>
+    </div>
   );
 }
 
-function Metric({value,label}:{value:string;label:string}) { return <div className="text-center"><strong className="font-display text-xl text-white md:text-2xl">{value}</strong><span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-[#727d98] md:text-xs">{label}</span></div>; }

@@ -1,0 +1,656 @@
+/*
+ * BizGuide AI - Paper Arcade marketing theme.
+ * Contract: docs/superpowers/specs/2026-10-19-homepage-theme.md
+ *
+ * Everything is scoped under `.marketing-page` and built from classes (no bare element
+ * selectors), so the shared dark tokens and the advisor's fonts are never touched.
+ * Font families come from next/font CSS variables (--font-mk-sans / --font-mk-mono) set on
+ * the marketing root; the Arial / ui-monospace fallbacks keep text readable if they fail.
+ */
+
+.marketing-page {
+  --mk-paper: #f4ebdd;
+  --mk-ink: #252820;
+  --mk-orange: #d94f30;
+  --mk-sage: #b9c7a5;
+  --mk-yellow: #f2ce67;
+  --mk-on-orange: #10120e;
+
+  --mk-border: 2px solid var(--mk-ink);
+  --mk-radius: 4px;
+  --mk-radius-max: 8px;
+  --mk-shadow-standard: 6px 6px 0 var(--mk-ink);
+  --mk-shadow-compact: 4px 4px 0 var(--mk-ink);
+
+  --mk-ease: ease-out;
+  --mk-t-control: 140ms;
+  --mk-t-reveal: 240ms;
+  --mk-t-card: 360ms;
+
+  --mk-font-sans: var(--font-mk-sans), Arial, sans-serif;
+  --mk-font-mono: var(--font-mk-mono), ui-monospace, monospace;
+  --mk-font-slab: var(--font-mk-slab), Georgia, serif;
+
+  min-height: 100dvh;
+  overflow-x: clip;
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+  color-scheme: light;
+  font-family: var(--mk-font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.marketing-page ::selection {
+  background: var(--mk-yellow);
+  color: var(--mk-ink);
+}
+
+/* Focus: 3px ink outline separated from the control by a 3px paper ring.
+   Components that own a hard shadow expose it as --mk-shadow so the ring composes with it. */
+.marketing-page :focus-visible:not(.mk-legacy *) {
+  outline: 3px solid var(--mk-ink);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--mk-paper), var(--mk-shadow, 0 0 0 0 transparent);
+}
+
+/* ---------- Layout ---------- */
+
+.mk-container {
+  width: min(1240px, calc(100% - 48px));
+  margin-inline: auto;
+}
+
+.mk-section {
+  padding-block: clamp(64px, 8vw, 112px);
+}
+
+@media (max-width: 639px) {
+  .mk-container {
+    width: calc(100% - 32px);
+  }
+}
+
+/* ---------- Typography ---------- */
+
+.mk-hero-title,
+.mk-h2,
+.mk-h3 {
+  margin: 0;
+  font-family: var(--mk-font-sans);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.mk-hero-title {
+  font-size: clamp(3rem, 7.5vw, 7.5rem);
+  line-height: 0.96;
+}
+
+.mk-h2 {
+  font-size: clamp(2.25rem, 4.5vw, 4.5rem);
+  line-height: 1.04;
+}
+
+.mk-h3 {
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.mk-accent {
+  color: var(--mk-orange);
+}
+
+/* Josefin Slab accent role (theme-contract extension): short editorial accents only.
+   Never below weight 400; text under ~24px uses weight 500+ and a slightly larger size. */
+.mk-slab {
+  font-family: var(--mk-font-slab);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mk-hero-title .mk-slab,
+.mk-h2 .mk-slab,
+.mk-h3 .mk-slab {
+  text-transform: uppercase;
+}
+
+.mk-slab-italic {
+  font-style: italic;
+}
+
+/* Section eyebrow / sub-heading */
+.mk-eyebrow {
+  margin: 0;
+  font-family: var(--mk-font-slab);
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Pull-quote style line */
+.mk-pullquote {
+  margin: 0;
+  font-family: var(--mk-font-slab);
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Inline italic emphasis inside body copy */
+.mk-emphasis {
+  font-family: var(--mk-font-slab);
+  font-size: 1.12em;
+  line-height: 1;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.mk-lead {
+  margin: 0;
+  text-wrap: pretty;
+  max-width: 46ch;
+  font-size: clamp(1.125rem, 1.4vw, 1.35rem);
+  line-height: 1.6;
+}
+
+.mk-body {
+  max-width: 62ch;
+}
+
+.mk-label {
+  font-family: var(--mk-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Stage / step numbers */
+.mk-number {
+  font-family: var(--mk-font-mono);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* ---------- Surfaces ---------- */
+
+.mk-panel {
+  --mk-shadow: var(--mk-shadow-standard);
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+  box-shadow: var(--mk-shadow);
+}
+
+.mk-panel--sage {
+  background: var(--mk-sage);
+}
+
+.mk-panel--yellow {
+  background: var(--mk-yellow);
+}
+
+.mk-panel--compact {
+  --mk-shadow: var(--mk-shadow-compact);
+}
+
+/* Square metadata chip */
+.mk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: var(--mk-border);
+  background: var(--mk-paper);
+  padding: 2px 8px;
+  font-family: var(--mk-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ---------- Controls ---------- */
+
+.mk-button,
+.mk-button-secondary {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 24px;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  font-family: var(--mk-font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: var(--mk-shadow);
+  transition:
+    transform var(--mk-t-control) var(--mk-ease),
+    box-shadow var(--mk-t-control) var(--mk-ease),
+    background-color var(--mk-t-control) var(--mk-ease);
+  touch-action: manipulation;
+}
+
+.mk-button {
+  --mk-shadow: 5px 5px 0 var(--mk-ink);
+  background: var(--mk-orange);
+  color: var(--mk-on-orange);
+}
+
+.mk-button-secondary {
+  --mk-shadow: var(--mk-shadow-compact);
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+}
+
+.mk-button:hover,
+.mk-button-secondary:hover {
+  transform: translate(-2px, -2px);
+  --mk-shadow: 7px 7px 0 var(--mk-ink);
+}
+
+.mk-button-secondary:hover {
+  --mk-shadow: 6px 6px 0 var(--mk-ink);
+  background: var(--mk-yellow);
+}
+
+.mk-button:active,
+.mk-button-secondary:active {
+  transform: translate(4px, 4px);
+  --mk-shadow: 1px 1px 0 var(--mk-ink);
+}
+
+.mk-button:disabled,
+.mk-button-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Square 44px icon control (menu toggle etc.) */
+.mk-icon-button {
+  --mk-shadow: var(--mk-shadow-compact);
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+  box-shadow: var(--mk-shadow);
+  cursor: pointer;
+  transition:
+    transform var(--mk-t-control) var(--mk-ease),
+    box-shadow var(--mk-t-control) var(--mk-ease),
+    background-color var(--mk-t-control) var(--mk-ease);
+}
+
+.mk-icon-button:active {
+  transform: translate(3px, 3px);
+  --mk-shadow: 1px 1px 0 var(--mk-ink);
+}
+
+/* Text link used for navigation */
+.mk-nav-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 4px;
+  border-bottom: 2px solid transparent;
+  color: var(--mk-ink);
+  font-family: var(--mk-font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: border-color var(--mk-t-control) var(--mk-ease);
+}
+
+.mk-nav-link:hover {
+  border-bottom-color: var(--mk-orange);
+}
+
+/* Form field: paper input inside an outlined shell */
+.mk-field-shell {
+  --mk-shadow: var(--mk-shadow-standard);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 8px;
+  box-shadow: var(--mk-shadow);
+}
+
+.mk-field-shell:focus-within {
+  outline: 3px solid var(--mk-ink);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--mk-paper), var(--mk-shadow);
+}
+
+@media (min-width: 640px) {
+  .mk-field-shell {
+    flex-direction: row;
+    align-items: stretch;
+  }
+}
+
+.mk-input {
+  min-width: 0;
+  min-height: 48px;
+  flex: 1;
+  border: 0;
+  border-radius: var(--mk-radius);
+  background: transparent;
+  padding: 0 12px;
+  color: var(--mk-ink);
+  font-family: var(--mk-font-sans);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.mk-input::placeholder {
+  color: var(--mk-ink);
+  opacity: 0.62;
+}
+
+/* The shell shows focus; the input keeps a visible ring of its own too (never removed). */
+.marketing-page .mk-input:focus-visible {
+  outline: 3px solid var(--mk-ink);
+  outline-offset: -3px;
+  box-shadow: none;
+}
+
+.mk-error {
+  margin: 12px 0 0;
+  border: var(--mk-border);
+  border-left: 8px solid var(--mk-orange);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 8px 12px;
+  font-weight: 500;
+}
+
+/* ---------- Header ---------- */
+
+.mk-skip-link {
+  position: absolute;
+  left: 16px;
+  top: -80px;
+  z-index: 100;
+  background: var(--mk-ink);
+  color: var(--mk-paper);
+  padding: 12px 16px;
+  font-family: var(--mk-font-mono);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.mk-skip-link:focus {
+  top: 16px;
+}
+
+.mk-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: var(--mk-border);
+  background: var(--mk-paper);
+}
+
+.mk-header-bar {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.mk-header-nav {
+  display: none;
+  align-items: center;
+  gap: 32px;
+}
+
+.mk-header-action {
+  display: none;
+}
+
+.mk-header .mk-button {
+  padding: 0 16px;
+  --mk-shadow: var(--mk-shadow-compact);
+}
+
+.mk-header .mk-button:hover {
+  --mk-shadow: 6px 6px 0 var(--mk-ink);
+}
+
+.mk-header .mk-button:active {
+  --mk-shadow: 1px 1px 0 var(--mk-ink);
+}
+
+.mk-header-toggle {
+  display: inline-grid;
+}
+
+.mk-mobile-nav {
+  border-top: var(--mk-border);
+}
+
+.mk-mobile-nav-list {
+  display: grid;
+  gap: 4px;
+  padding-block: 16px 24px;
+}
+
+.mk-mobile-nav .mk-nav-link {
+  min-height: 48px;
+  border-bottom: 2px solid var(--mk-ink);
+}
+
+.mk-mobile-nav .mk-button {
+  margin-top: 16px;
+}
+
+@media (min-width: 768px) {
+  .mk-header-nav {
+    display: flex;
+  }
+
+  .mk-header-action {
+    display: block;
+  }
+
+  .mk-header-toggle,
+  .mk-mobile-nav {
+    display: none;
+  }
+}
+
+.mk-wordmark {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  color: var(--mk-ink);
+  font-family: var(--mk-font-sans);
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.mk-wordmark-ai {
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-ink);
+  color: var(--mk-paper);
+  padding: 3px 6px;
+  font-family: var(--mk-font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Hero ---------- */
+
+.mk-hero {
+  border-bottom: var(--mk-border);
+  padding-block: clamp(40px, 6vw, 80px) clamp(56px, 7vw, 96px);
+}
+
+.mk-hero-grid {
+  display: grid;
+  gap: 48px;
+  margin-top: clamp(24px, 3vw, 40px);
+}
+
+.mk-hero-copy {
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+
+.mk-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.mk-hero-hints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.mk-hero-hints .mk-chip {
+  min-height: 36px;
+  cursor: pointer;
+  transition: background-color var(--mk-t-control) var(--mk-ease);
+}
+
+.mk-hero-hints .mk-chip:hover {
+  background: var(--mk-yellow);
+}
+
+.mk-preview {
+  position: relative;
+  align-self: start;
+}
+
+.mk-preview-card {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.mk-preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mk-bubble {
+  max-width: 100%;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 12px 16px;
+}
+
+.mk-preview-bar .mk-label {
+  margin: 0;
+}
+
+.mk-bubble-lead {
+  margin: 0;
+  font-weight: 500;
+}
+
+.mk-bubble--user {
+  justify-self: end;
+  max-width: 92%;
+  font-weight: 500;
+}
+
+.mk-bubble--advisor {
+  background: var(--mk-paper);
+}
+
+.mk-bubble-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.mk-bubble-list li + li {
+  margin-top: 4px;
+}
+
+@media (min-width: 1024px) {
+  .mk-hero-grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 64px;
+    align-items: start;
+  }
+
+  .mk-preview::before {
+    content: "";
+    position: absolute;
+    inset: 20px -16px -16px 20px;
+    border: var(--mk-border);
+    border-radius: var(--mk-radius);
+    background: var(--mk-yellow);
+  }
+}
+
+/* ---------- Motion preferences ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-page *,
+  .marketing-page *::before,
+  .marketing-page *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Legacy dark content (removed section by section in later tasks) ---------- */
+
+.mk-legacy {
+  background: #050816;
+  color: #f7f8ff;
+  color-scheme: dark;
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.marketing-page .mk-legacy ::selection {
+  background: #53e0ff;
+  color: #050816;
+}
