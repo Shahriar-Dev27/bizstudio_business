@@ -2,6 +2,7 @@ import "./marketing.css";
 import Link from "next/link";
 import { IBM_Plex_Mono, Josefin_Slab, Space_Grotesk } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
+import { BusinessExamples } from "@/components/marketing/business-examples";
 import { CapabilitySection } from "@/components/marketing/capability-section";
 import { FaqSection } from "@/components/marketing/faq-section";
 import { HeroSection } from "@/components/marketing/hero-section";
@@ -23,6 +24,7 @@ export default function HomePage() {
         <HeroSection />
         <CapabilitySection />
         <HowItWorks />
+        <BusinessExamples />
         <NotesSection />
         <FaqSection />
 
