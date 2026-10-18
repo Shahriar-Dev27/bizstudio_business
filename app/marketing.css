@@ -8,6 +8,13 @@
  * the marketing root; the Arial / ui-monospace fallbacks keep text readable if they fail.
  */
 
+/* Hard-shadow owner variable: must not inherit, so focusable descendants of a panel or
+   field shell compose their ring with their own shadow (none) instead of the parent's. */
+@property --mk-shadow {
+  syntax: "*";
+  inherits: false;
+}
+
 .marketing-page {
   --mk-paper: #f4ebdd;
   --mk-ink: #252820;
@@ -28,7 +35,10 @@
   --mk-t-card: 360ms;
 
   --mk-font-sans: var(--font-mk-sans), Arial, sans-serif;
-  --mk-font-mono: var(--font-mk-mono), ui-monospace, monospace;
+  /* Uses the real family name that next/font (Turbopack) registers, not the --font-mk-mono stack:
+     that stack always appends a generated Arial-based "IBM Plex Mono Fallback" face (adjustFontFallback
+     is ignored), which would stop the contract's ui-monospace fallback from ever applying. */
+  --mk-font-mono: "IBM Plex Mono", ui-monospace, monospace;
   --mk-font-slab: var(--font-mk-slab), Georgia, serif;
 
   min-height: 100dvh;
@@ -260,15 +270,17 @@
   color: var(--mk-ink);
 }
 
-.mk-button:hover,
-.mk-button-secondary:hover {
-  transform: translate(-2px, -2px);
-  --mk-shadow: 7px 7px 0 var(--mk-ink);
-}
+@media (hover: hover) {
+  .mk-button:hover,
+  .mk-button-secondary:hover {
+    transform: translate(-2px, -2px);
+    --mk-shadow: 7px 7px 0 var(--mk-ink);
+  }
 
-.mk-button-secondary:hover {
-  --mk-shadow: 6px 6px 0 var(--mk-ink);
-  background: var(--mk-yellow);
+  .mk-button-secondary:hover {
+    --mk-shadow: 6px 6px 0 var(--mk-ink);
+    background: var(--mk-yellow);
+  }
 }
 
 .mk-button:active,
@@ -303,8 +315,8 @@
 }
 
 .mk-icon-button:active {
-  transform: translate(3px, 3px);
-  --mk-shadow: 1px 1px 0 var(--mk-ink);
+  transform: translate(4px, 4px);
+  --mk-shadow: 0 0 0 var(--mk-ink);
 }
 
 /* Text link used for navigation */
@@ -370,7 +382,7 @@
 
 .mk-input::placeholder {
   color: var(--mk-ink);
-  opacity: 0.62;
+  opacity: 0.8;
 }
 
 /* The shell shows focus; the input keeps a visible ring of its own too (never removed). */
@@ -440,8 +452,10 @@
   --mk-shadow: var(--mk-shadow-compact);
 }
 
-.mk-header .mk-button:hover {
-  --mk-shadow: 6px 6px 0 var(--mk-ink);
+@media (hover: hover) {
+  .mk-header .mk-button:hover {
+    --mk-shadow: 6px 6px 0 var(--mk-ink);
+  }
 }
 
 .mk-header .mk-button:active {
@@ -471,7 +485,7 @@
   margin-top: 16px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 900px) {
   .mk-header-nav {
     display: flex;
   }
@@ -547,13 +561,15 @@
 }
 
 .mk-hero-hints .mk-chip {
-  min-height: 36px;
+  min-height: 48px;
   cursor: pointer;
   transition: background-color var(--mk-t-control) var(--mk-ease);
 }
 
-.mk-hero-hints .mk-chip:hover {
-  background: var(--mk-yellow);
+@media (hover: hover) {
+  .mk-hero-hints .mk-chip:hover {
+    background: var(--mk-yellow);
+  }
 }
 
 .mk-preview {
@@ -596,10 +612,6 @@
   justify-self: end;
   max-width: 92%;
   font-weight: 500;
-}
-
-.mk-bubble--advisor {
-  background: var(--mk-paper);
 }
 
 .mk-bubble-list {

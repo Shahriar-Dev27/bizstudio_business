@@ -10,6 +10,7 @@ import { HeroSection } from "@/components/marketing/hero-section";
 // Self-hosted at build time with font-display: swap; the CSS stacks fall back to Arial / ui-monospace.
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "700"], display: "swap", variable: "--font-mk-sans" });
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], display: "swap", variable: "--font-mk-mono" });
+const josefinSlab = Josefin_Slab({ subsets: ["latin"], style: ["normal", "italic"], display: "swap", variable: "--font-mk-slab", fallback: ["Georgia", "serif"] });
 
 const steps = [
   { number: "01", icon: MessageSquareText, title: "Tell us the reality", text: "Share the idea, location, budget, experience, target customer, and timeline." },
@@ -25,8 +26,6 @@ const faqs = [
 ];
 
 const categories = ["Food & beverage", "Retail", "Online business", "Services", "Agriculture", "Manufacturing", "Local commerce"];
-const josefinSlab = Josefin_Slab({ subsets: ["latin"], style: ["normal", "italic"], display: "swap", variable: "--font-mk-slab", fallback: ["Georgia", "serif"] });
-
 export default function HomePage() {
   return (
     <div className={`marketing-page ${spaceGrotesk.variable} ${plexMono.variable} ${josefinSlab.variable}`}>

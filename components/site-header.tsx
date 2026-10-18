@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MarketingBrand } from "./marketing/marketing-brand";
 
 const links = [
@@ -14,10 +14,11 @@ const links = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") { setOpen(false); toggleRef.current?.focus(); } };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
@@ -30,7 +31,7 @@ export function SiteHeader() {
           {links.map((link) => <Link key={link.href} href={link.href} className="mk-nav-link">{link.label}</Link>)}
         </nav>
         <div className="mk-header-action"><Link href="/advisor" className="mk-button">Start planning <ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" /></Link></div>
-        <button type="button" className="mk-icon-button mk-header-toggle" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} aria-controls="mk-mobile-nav" onClick={() => setOpen((value) => !value)}>
+        <button ref={toggleRef} type="button" className="mk-icon-button mk-header-toggle" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} aria-controls="mk-mobile-nav" onClick={() => setOpen((value) => !value)}>
           {open ? <X size={22} strokeWidth={2.5} aria-hidden="true" /> : <Menu size={22} strokeWidth={2.5} aria-hidden="true" />}
         </button>
       </div>
