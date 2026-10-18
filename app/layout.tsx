@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BizGuide AI — Plan a smarter business in Bangladesh",
+  title: "BizGuide AI — Business planning partner for Bangladesh",
   description:
-    "A guided business planning prototype for exploring location, budget, timing, setup needs, and market considerations in Bangladesh.",
+    "Talk through a business idea with an AI planning partner for Bangladesh. Explore customers, location, budget, timing, and risks, then plan small tests and verify details locally.",
   icons: {
     icon: "/brand/bizguide-logo.png",
     apple: "/brand/bizguide-logo.png",
