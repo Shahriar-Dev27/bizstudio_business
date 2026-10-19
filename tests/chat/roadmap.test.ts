@@ -23,6 +23,56 @@ it("reads a validated business workflow without executing diagram code", () => {
   expect(result.prose).toContain("Here is your plan.");
   expect(result.prose).not.toContain("```roadmap");
 });
+it.each(["json", "", "JSON"])(
+  "extracts a roadmap from a %s code block instead of exposing JSON",
+  (language) => {
+    const result = extractRoadmap(
+      `Validate demand first.\n\n\`\`\`${language}\n` +
+        JSON.stringify({ title: "Sylhet Coffee Shop Launch Roadmap", steps }) +
+        "\n```\n\nStart with customer interviews.",
+    );
+    expect(result.roadmap?.title).toBe("Sylhet Coffee Shop Launch Roadmap");
+    expect(result.roadmap?.steps).toHaveLength(3);
+    expect(result.prose).toBe(
+      "Validate demand first.\n\n\n\nStart with customer interviews.",
+    );
+    expect(result.invalid).toBe(false);
+  },
+);
+it("renders a response containing only a roadmap JSON object", () => {
+  const result = extractRoadmap(JSON.stringify({ title: "Coffee launch", steps }));
+  expect(result.roadmap?.title).toBe("Coffee launch");
+  expect(result.prose).toBe("");
+});
+it("preserves unrelated code blocks before and after a roadmap", () => {
+  const before = '```json\n{"example":true}\n```\n\n';
+  const after = '\n\n```js\nconst steps = [];\n```';
+  const result = extractRoadmap(
+    before +
+      "```json\n" +
+      JSON.stringify({ title: "Plan", steps }) +
+      "\n```" +
+      after,
+  );
+  expect(result.roadmap?.steps).toHaveLength(3);
+  expect(result.prose).toBe((before + after).trim());
+});
+it.each([
+  '{"example":true}',
+  '{"title":"Invalid roadmap","steps":[]}',
+  JSON.stringify({
+    title: "Invalid dependencies",
+    steps: [steps[0], { ...steps[1], dependsOn: ["unknown"] }, steps[2]],
+  }),
+  "not valid JSON",
+])("does not convert ordinary or invalid JSON into a diagram: %s", (json) => {
+  const content = "```json\n" + json + "\n```";
+  expect(extractRoadmap(content)).toEqual({
+    prose: content,
+    roadmap: null,
+    invalid: false,
+  });
+});
 it("rejects cycles, unknown references, repeated IDs and oversized steps", () => {
   expect(
     validateRoadmap({

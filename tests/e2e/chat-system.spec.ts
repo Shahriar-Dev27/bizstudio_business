@@ -52,6 +52,37 @@ async function send(page: Page, text: string) {
   await page.getByRole("textbox", { name: "Ask BizGuide AI" }).fill(text);
   await page.getByRole("button", { name: "Send message", exact: true }).click();
 }
+for (const language of ["json", ""]) {
+  test(`renders ${language || "unlabeled"} roadmap data as a diagram`, async ({
+    page,
+  }, info) => {
+    await page.route("**/api/advisor/chat", (route) =>
+      route.fulfill({
+        contentType: "text/event-stream",
+        body: wire(
+          route.request().postDataJSON().attemptId,
+          roadmapText.replace("```roadmap", `\`\`\`${language}`),
+        ),
+      }),
+    );
+    await ready(page);
+    await send(page, "Give a roadmap for my Dhaka snack business");
+    await expect(
+      page.getByRole("img", { name: /Dhaka snack pilot/ }),
+    ).toBeVisible();
+    await expect(page.locator(".adv-workflow-scroll svg > path")).toHaveCount(
+      2,
+    );
+    await expect(page.locator(".adv-message--assistant pre")).toHaveCount(0);
+    await expect(
+      page.getByRole("checkbox", { name: "Mark complete", exact: true }),
+    ).toHaveCount(3);
+    await mkdir(".agency/chat-improvements/evidence", { recursive: true });
+    await page.locator(".adv-workflow-figure").screenshot({
+      path: `.agency/chat-improvements/evidence/diagram-${language || "unlabeled"}-${info.project.name}.png`,
+    });
+  });
+}
 test("keeps navigation and notes visible with common advertising filters", async ({
   page,
 }, info) => {

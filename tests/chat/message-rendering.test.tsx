@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import {
   AdvisorMessageCard,
@@ -16,6 +16,49 @@ const message = {
   status: "complete" as const,
 };
 afterEach(cleanup);
+it.each(["roadmap", "json", ""])(
+  "shows a workflow diagram and interactive steps for a %s roadmap block",
+  (language) => {
+    const onToggle = vi.fn(),
+      onPin = vi.fn();
+    const steps = ["research", "pilot", "launch"].map((id, i) => ({
+      id,
+      title: ["Validate demand", "Run pilot", "Review results"][i],
+      action: "Interview customers before committing money.",
+      deliverable: "Customer notes",
+      check: "Five interviews recorded",
+      timing: "Week 1",
+      dependsOn: i ? ["research"] : [],
+    }));
+    const { container } = render(
+      <AdvisorMessageCard
+        message={{
+          ...message,
+          content: `Validate demand first.\n\n\`\`\`${language}\n${JSON.stringify({ title: "Sylhet Coffee Shop Launch Roadmap", steps })}\n\`\`\``,
+        }}
+        onPin={onPin}
+        pinnedTexts={new Set()}
+        onToggleStep={onToggle}
+      />,
+    );
+    expect(
+      screen.getByRole("img", { name: /Sylhet Coffee Shop Launch Roadmap/ }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(container.querySelector("pre")).toBeNull();
+    expect(screen.getByText("Validate demand first.")).toBeTruthy();
+    const checks = screen.getAllByRole("checkbox") as HTMLInputElement[];
+    expect(checks[1].disabled).toBe(true);
+    fireEvent.click(checks[0]);
+    expect(onToggle).toHaveBeenCalledWith("m:research", true);
+    fireEvent.click(screen.getAllByRole("button", { name: "Pin this step" })[0]);
+    expect(onPin).toHaveBeenCalledWith(
+      "1. Validate demand\nDone when: Five interviews recorded",
+      "m",
+      "step",
+    );
+  },
+);
 it("uses semantic lists/tables and removes repetitive paragraph pins", () => {
   render(
     <AdvisorMessageCard

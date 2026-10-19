@@ -32,7 +32,7 @@ function answerInstruction(request: AdvisorRequest) {
       : request.mode;
   const instruction =
     mode === "roadmap"
-      ? "The user wants a roadmap. Provide a short context/assumptions note, then a complete roadmap JSON block using the required schema. The app renders the diagram and ordered text cards. Keep actions concrete; no invented prices, dates or rules."
+      ? "The user wants a visual roadmap. Provide a short context/assumptions note, then exactly one fenced block starting with ```roadmap and ending with ```, containing a complete JSON object using the required schema. The app renders the diagram and ordered text cards. Keep actions concrete; no invented prices, dates or rules."
       : mode === "detail"
         ? "Give a focused detailed analysis under 500 words, with labelled assumptions and measurable next actions."
         : "Answer directly and precisely in at most 250 words. Ask at most three decision-changing questions only if needed. Avoid an unnecessary full report.";

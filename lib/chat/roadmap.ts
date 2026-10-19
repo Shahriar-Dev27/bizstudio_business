@@ -82,23 +82,40 @@ export function validateRoadmap(value: unknown): Roadmap | null {
     })),
   };
 }
+function parseRoadmap(json: string): Roadmap | null {
+  if (json.length > 18000) return null;
+  try {
+    return validateRoadmap(JSON.parse(json));
+  } catch {
+    return null;
+  }
+}
 export function extractRoadmap(content: string): {
   prose: string;
   roadmap: Roadmap | null;
   invalid: boolean;
 } {
-  const match = /```roadmap\s*\n([\s\S]*?)```/i.exec(content);
-  if (!match) return { prose: content, roadmap: null, invalid: false };
-  let roadmap: Roadmap | null = null;
-  try {
-    if (match[1].length <= 18000)
-      roadmap = validateRoadmap(JSON.parse(match[1]));
-  } catch {
-    /* Keep the prose alternative. */
+  // Read every fence so unrelated code is preserved and cannot hide a later roadmap.
+  for (const match of content.matchAll(/```([^\r\n`]*)\r?\n([\s\S]*?)```/g)) {
+    const language = match[1].trim().toLowerCase();
+    if (language !== "roadmap" && language !== "json" && language !== "")
+      continue;
+    const roadmap = parseRoadmap(match[2]);
+    // Only the explicit roadmap format claims invalid data belongs to a diagram.
+    if (!roadmap && language !== "roadmap") continue;
+    return {
+      prose: (
+        content.slice(0, match.index) +
+        content.slice(match.index + match[0].length)
+      ).trim(),
+      roadmap,
+      invalid: !roadmap,
+    };
   }
+  const roadmap = parseRoadmap(content.trim());
   return {
-    prose: content.replace(match[0], "").trim(),
+    prose: roadmap ? "" : content,
     roadmap,
-    invalid: !roadmap,
+    invalid: false,
   };
 }
