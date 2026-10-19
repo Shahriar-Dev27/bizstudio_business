@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Check, Lightbulb, NotebookPen, RotateCcw, Send, Square } from "lucide-react";
+import { ArrowLeft, Check, Lightbulb, NotebookPen, RotateCcw, Send, Square, TriangleAlert } from "lucide-react";
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ADVISOR_WELCOME } from "@/lib/advisor-prompt";
 import type { ChatMessage, PinnedNote } from "@/types/advisor";
 import { AdvisorMessageCard } from "./advisor-message";
-import { Brand } from "./brand";
+import { MarketingBrand } from "./marketing/marketing-brand";
 import { PinnedNotes } from "./pinned-notes";
 
 const PIN_STORAGE_KEY = "bizguide-pinned-notes-v1";
@@ -59,7 +58,7 @@ export function AdvisorExperience() {
   }, [pins, pinsReady]);
 
   useEffect(() => {
-    scrollAnchorRef.current?.scrollIntoView({ behavior: sending ? "smooth" : "auto", block: "end" });
+    scrollAnchorRef.current?.scrollIntoView({ behavior: sending && !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "auto", block: "end" });
   }, [messages, sending]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -152,36 +151,62 @@ export function AdvisorExperience() {
   function resetChat() { abortRef.current?.abort(); setMessages([makeMessage("assistant", ADVISOR_WELCOME)]); setDraft(""); setError(""); setLastUserText(""); }
   function retry() { if (lastUserText) void requestAdvice(lastUserText); }
 
+  // Render-only values derived from existing state; they add no behaviour.
+  const liveStatus = sending ? "BizGuide is writing a reply." : messages.length > 1 && messages[messages.length - 1].role === "assistant" ? "BizGuide replied." : "";
+  const showPrefill = initialIdea.length > 0 && draft === initialIdea && messages.length === 1;
+  // OQ1 (UI-only): send focus back to the Notes button when the drawer closes.
+  const notesToggleRef = useRef<HTMLButtonElement>(null);
+  function closeNotes() { setNotesOpen(false); notesToggleRef.current?.focus(); }
   return (
-    <div className="flex h-dvh min-h-[650px] flex-col overflow-hidden bg-[#050816]">
-      <header className="z-20 border-b border-white/10 bg-[#050816]/92 backdrop-blur-xl"><div className="flex min-h-18 items-center justify-between gap-4 px-4 md:px-6"><div className="flex items-center gap-4"><Brand /><span className="hidden h-7 w-px bg-white/10 sm:block" /><div className="hidden sm:block"><p className="text-xs font-bold text-white">Bangladesh Business Advisor</p><p className="flex items-center gap-1.5 text-[10px] text-[#71809b]"><span className="size-1.5 rounded-full bg-[#53e0ff]" /> AI planning workspace</p></div></div><div className="flex items-center gap-2"><button type="button" onClick={resetChat} className="hidden min-h-11 items-center gap-2 rounded-xl px-3 text-xs font-bold text-[#8f9ab2] hover:bg-white/[.06] hover:text-white sm:flex"><RotateCcw size={16} /> New plan</button><button type="button" onClick={() => setNotesOpen(true)} className="relative flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[.045] px-3 text-xs font-bold text-[#b5bed1] hover:border-[#53e0ff]/30 lg:hidden"><NotebookPen size={17} /> Notes{pins.length > 0 && <span className="grid size-5 place-items-center rounded-full bg-[#0891b2] text-[10px] text-white">{pins.length}</span>}</button><Link href="/" className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-[#9ca7be] hover:text-white" aria-label="Back to homepage"><ArrowLeft size={18} /></Link></div></div></header>
+    <div className="adv-shell">
+      <header className="adv-header">
+        <div className="adv-header-bar">
+          <div className="adv-header-brand">
+            <MarketingBrand />
+            <p className="mk-label adv-header-tag">Bangladesh business advisor</p>
+          </div>
+          <div className="adv-header-actions">
+            <button type="button" onClick={resetChat} className="mk-button-secondary adv-header-button"><RotateCcw size={18} strokeWidth={2.5} aria-hidden="true" /><span className="adv-collapse-label">New plan</span></button>
+            <button ref={notesToggleRef} type="button" onClick={() => setNotesOpen(true)} className="mk-button-secondary adv-header-button adv-notes-toggle" aria-haspopup="dialog" aria-expanded={notesOpen}><NotebookPen size={18} strokeWidth={2.5} aria-hidden="true" /><span className="adv-collapse-label">Notes</span>{pins.length > 0 && <span className="adv-count"><span className="mk-sr-only">, </span>{pins.length}<span className="mk-sr-only"> saved</span></span>}</button>
+            <Link href="/" className="mk-button-secondary adv-header-button" aria-label="Back to homepage"><ArrowLeft size={18} strokeWidth={2.5} aria-hidden="true" /><span className="adv-collapse-label">Back to home</span></Link>
+          </div>
+        </div>
+      </header>
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <main className="relative flex min-h-0 flex-col">
-          <div className="soft-grid pointer-events-none absolute inset-0 opacity-25" />
-          <Image src="/brand/bizguide-logo.png" alt="" width={620} height={620} loading="eager" className="pointer-events-none absolute left-1/2 top-1/2 w-[min(70vw,620px)] -translate-x-1/2 -translate-y-1/2 opacity-[.035]" aria-hidden="true" />
-          <div className="relative min-h-0 flex-1 overflow-y-auto">
-            <div className="mx-auto grid max-w-4xl gap-6 px-4 py-7 md:px-8 md:py-9">
+      <div className="adv-body">
+        <main className="adv-chat">
+          <h1 className="mk-sr-only">BizGuide AI business advisor</h1>
+          <section className="adv-transcript" aria-label="Conversation" tabIndex={0}>
+            <div className="adv-transcript-inner">
               {messages.map((message) => <AdvisorMessageCard key={message.id} message={message} onPin={addPin} pinnedTexts={pinnedTexts} />)}
-              {messages.length === 1 && <section className="ml-12 mt-1"><p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6f7b96]"><Lightbulb size={14} /> Try a planning prompt</p><div className="grid gap-2 sm:grid-cols-2">{starters.map((starter) => <button key={starter} type="button" onClick={() => void requestAdvice(starter)} className="min-h-14 rounded-xl border border-white/10 bg-white/[.025] px-4 py-3 text-left text-sm font-semibold leading-5 text-[#aeb7ca] hover:border-[#0891b2]/35 hover:bg-[#0891b2]/[.07] hover:text-white">{starter}</button>)}</div></section>}
+              {messages.length === 1 && <section className="adv-starters" aria-labelledby="adv-starters-title"><h2 id="adv-starters-title" className="mk-label adv-starters-title"><Lightbulb size={16} strokeWidth={2.5} aria-hidden="true" /> Try a planning prompt</h2><div className="adv-starter-grid">{starters.map((starter) => <button key={starter} type="button" onClick={() => void requestAdvice(starter)} className="mk-button-secondary adv-starter">{starter}</button>)}</div></section>}
               <div ref={scrollAnchorRef} />
             </div>
-          </div>
+          </section>
+          <p className="mk-sr-only" role="status">{liveStatus}</p>
 
-          <div className="relative border-t border-white/10 bg-[#070b17]/94 px-3 py-3 backdrop-blur-xl md:px-6 md:py-4">
-            <div className="mx-auto max-w-4xl">
-              {error && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/[.07] px-4 py-2.5 text-sm text-red-200" role="alert"><span>{error}</span>{lastUserText && !sending && <button type="button" onClick={retry} className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold hover:bg-red-300/10">Retry</button>}</div>}
-              <form onSubmit={submit} className="rounded-2xl border border-white/12 bg-[#0b1122] p-2 shadow-[0_18px_50px_rgba(0,0,0,.3)] focus-within:border-[#53e0ff]/35"><label htmlFor="advisor-composer" className="sr-only">Ask BizGuide AI</label><textarea ref={composerRef} id="advisor-composer" value={draft} onChange={(event) => { setDraft(event.target.value); setError(""); }} onKeyDown={handleKeyDown} rows={2} maxLength={4000} placeholder="Describe your idea, location, budget, or ask your next business question…" disabled={sending} className="max-h-40 min-h-14 w-full resize-none bg-transparent px-3 py-2 text-base leading-6 text-white outline-none placeholder:text-[#5f6a84] disabled:opacity-60" /><div className="flex items-center justify-between gap-3 px-2 pb-1"><p className="text-[10px] text-[#69758f]">Enter to send • Shift + Enter for a new line</p>{sending ? <button type="button" onClick={stop} className="grid size-10 place-items-center rounded-xl border border-red-400/20 bg-red-400/10 text-red-200" aria-label="Stop response"><Square size={15} className="fill-current" /></button> : <button type="submit" disabled={!draft.trim()} className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-[#0891b2] to-[#2563eb] text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-35" aria-label="Send message"><Send size={17} /></button>}</div></form>
-              <p className="mt-2 text-center text-[10px] text-[#59657e]">BizGuide can make mistakes. Verify legal, financial, pricing, and local market details with current official sources.</p>
+          <div className="adv-composer-bar">
+            <div className="adv-composer-inner">
+              {error && <div className="adv-alert" role="alert"><TriangleAlert size={18} strokeWidth={2.5} aria-hidden="true" /><p className="adv-alert-text">{error}</p>{lastUserText && !sending && <button type="button" onClick={retry} className="mk-button-secondary adv-alert-retry">Retry</button>}</div>}
+              {showPrefill && <p id="adv-prefill-note" className="adv-prefill"><span className="mk-label">From the homepage</span> Your idea is in the message box. Edit it, then press Send. Nothing is sent until you do.</p>}
+              <form onSubmit={submit} className="adv-composer">
+                <label htmlFor="advisor-composer" className="mk-sr-only">Ask BizGuide AI</label>
+                <textarea ref={composerRef} id="advisor-composer" value={draft} onChange={(event) => { setDraft(event.target.value); setError(""); }} onKeyDown={handleKeyDown} rows={2} maxLength={4000} placeholder={sending ? "BizGuide is replying… press Stop to interrupt." : "Describe your idea, location, budget, or ask your next business question…"} disabled={sending} aria-describedby={showPrefill ? "adv-composer-hint adv-prefill-note" : "adv-composer-hint"} className="adv-composer-input" />
+                <div className="adv-composer-footer">
+                  {sending ? <p id="adv-composer-hint" className="adv-composer-hint">BizGuide is replying…</p> : <p id="adv-composer-hint" className="adv-composer-hint adv-composer-hint--keys">Enter to send · Shift + Enter for a new line</p>}
+                  {sending ? <button type="button" onClick={stop} className="mk-button-secondary adv-stop" aria-label="Stop response"><Square size={14} strokeWidth={2.5} fill="currentColor" aria-hidden="true" /> Stop</button> : <button type="submit" disabled={!draft.trim()} className="mk-button adv-send" aria-label="Send message"><Send size={18} strokeWidth={2.5} aria-hidden="true" /> Send</button>}
+                </div>
+              </form>
+              <p className="adv-disclaimer">BizGuide can make mistakes. Verify legal, financial, pricing, and local market details with current official sources.</p>
             </div>
           </div>
         </main>
 
-        <div className="hidden min-h-0 border-l border-white/10 lg:block"><PinnedNotes notes={pins} onAdd={(text) => addPin(text)} onUpdate={updatePin} onRemove={removePin} /></div>
+        <div className="adv-sidebar"><PinnedNotes notes={pins} onAdd={(text) => addPin(text)} onUpdate={updatePin} onRemove={removePin} /></div>
       </div>
 
-      {notesOpen && <div className="fixed inset-0 z-50 lg:hidden"><button type="button" className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setNotesOpen(false)} aria-label="Close notes overlay" /><div className="absolute inset-y-0 right-0 w-[min(92vw,380px)] border-l border-white/10 shadow-2xl"><PinnedNotes notes={pins} onAdd={(text) => addPin(text)} onUpdate={updatePin} onRemove={removePin} onClose={() => setNotesOpen(false)} /></div></div>}
-      {pinNotice && <div className="fixed bottom-24 left-1/2 z-[60] flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#53e0ff]/20 bg-[#0b1424]/95 px-4 py-2 text-xs font-bold text-[#8decff] shadow-2xl" role="status"><Check size={14} />{pinNotice}</div>}
+      {notesOpen && <div className="adv-drawer" role="dialog" aria-modal="true" aria-label="Pinned notes" onKeyDown={(event) => { if (event.key === "Escape") closeNotes(); }}><button type="button" className="adv-drawer-scrim" onClick={closeNotes} aria-label="Close notes overlay" tabIndex={-1} /><div className="adv-drawer-panel"><PinnedNotes notes={pins} onAdd={(text) => addPin(text)} onUpdate={updatePin} onRemove={removePin} onClose={closeNotes} /></div></div>}
+      {pinNotice && <div className="adv-toast" role="status"><Check size={16} strokeWidth={2.5} aria-hidden="true" />{pinNotice}</div>}
     </div>
   );
 }
