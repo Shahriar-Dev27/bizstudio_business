@@ -19,25 +19,36 @@ export const FINAL_ACTION_LABEL = "Start with your own idea";
 /** Short node names, in order: the full connected process shown at the final stage. */
 export const PROCESS_FLOW = ["Your idea", "Your context", "Business lenses", "Practical next steps", "Refine + save"] as const;
 
-/** One supporting line per lens, in the same order as the stage 03 `details`. */
-export const LENS_NOTES = [
-  "Who buys first, and a cheap way to test demand before you build.",
-  "Which neighborhood suits those customers, and what to check on a site visit.",
-  "Cost assumptions and a working-capital buffer for the money you have.",
-  "Suppliers, equipment, people, and the daily workflow.",
-  "Seasonality, festivals, and the best time to start.",
-  "What could go wrong, and what to verify with local authorities.",
+/**
+ * Stage 03 lenses. Name, supporting line, and (in the diagram) icon travel together, so a lens can
+ * never be paired with another lens's note. The stage `details` below are derived from this list.
+ */
+export const LENSES = [
+  { name: "Customers", note: "Who buys first, and a cheap way to test demand before you build." },
+  { name: "Location", note: "Which neighborhood suits those customers, and what to check on a site visit." },
+  { name: "Budget", note: "Cost assumptions and a working-capital buffer for the money you have." },
+  { name: "Operations", note: "Suppliers, equipment, people, and the daily workflow." },
+  { name: "Timing", note: "Seasonality, festivals, and the best time to start." },
+  { name: "Risks", note: "What could go wrong, and what to verify with local authorities." },
 ] as const;
 
-export type PlanTag = "Assumption" | "Verify locally";
+export type LensName = (typeof LENSES)[number]["name"];
 
-/** One tag per stage 04 `details` item, in the same order. */
-export const PLAN_TAGS: readonly PlanTag[] = ["Assumption", "Verify locally", "Assumption", "Verify locally"];
+/** The label says what the step does with the claim: put a guess to the test, or confirm a fact locally. */
+export type PlanTag = "Assumption to test" | "Verify locally";
 
 export const PLAN_TAG_MEANING: Record<PlanTag, string> = {
-  Assumption: "a guess to test, not a fact",
+  "Assumption to test": "a guess this step puts to the test, not a fact",
   "Verify locally": "confirm with current local sources",
 };
+
+/** Stage 04 sample plan. Each step carries its own tag; `details` below is derived from this list. */
+export const PLAN_STEPS: readonly { label: string; tag: PlanTag }[] = [
+  { label: "Test a preorder bakery pilot", tag: "Assumption to test" },
+  { label: "Obtain current supplier quotes", tag: "Verify locally" },
+  { label: "Interview potential customers", tag: "Assumption to test" },
+  { label: "Estimate costs using verified inputs", tag: "Verify locally" },
+];
 
 export const PROCESS_STAGES: readonly ProcessStage[] = [
   {
@@ -59,19 +70,14 @@ export const PROCESS_STAGES: readonly ProcessStage[] = [
     number: "03",
     title: "Explore the business",
     description: "The idea is examined through six lenses. Expect demand tests, cost assumptions, supplier and setup questions, seasonality, and clear notes on what you must verify yourself.",
-    details: ["Customers", "Location", "Budget", "Operations", "Timing", "Risks"],
+    details: LENSES.map((lens) => lens.name),
   },
   {
     id: "process-plan",
     number: "04",
     title: "Choose a practical next move",
-    description: "The discussion narrows into a small plan with prioritized next actions. Every sample step is labeled as an assumption or something to verify locally.",
-    details: [
-      "Test a preorder bakery pilot",
-      "Obtain current supplier quotes",
-      "Interview potential customers",
-      "Estimate costs using verified inputs",
-    ],
+    description: "The discussion narrows into a small plan with prioritized next actions. Every sample step is labeled as an assumption to test or something to verify locally.",
+    details: PLAN_STEPS.map((step) => step.label),
   },
   {
     id: "process-notes",

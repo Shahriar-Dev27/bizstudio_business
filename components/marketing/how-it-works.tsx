@@ -7,8 +7,8 @@ import { ProcessDiagram } from "./process-diagram";
 import {
   CONTEXT_CHIPS,
   FINAL_ACTION_LABEL,
-  LENS_NOTES,
-  PLAN_TAGS,
+  LENSES,
+  PLAN_STEPS,
   PLAN_TAG_MEANING,
   PROCESS_FLOW,
   PROCESS_STAGES,
@@ -22,7 +22,7 @@ type StageState = "complete" | "active" | "future";
 // Text twin of the colour state, shown beside each stage while the scroll walkthrough is running.
 const STAGE_STATE_LABEL: Record<StageState, string> = { complete: "Done", active: "Now", future: "Next" };
 
-const TAGS_IN_LEGEND: readonly PlanTag[] = ["Assumption", "Verify locally"];
+const TAGS_IN_LEGEND: readonly PlanTag[] = ["Assumption to test", "Verify locally"];
 
 function StageSample({ index, stage }: { index: number; stage: ProcessStage }): React.JSX.Element | null {
   switch (index) {
@@ -51,8 +51,8 @@ function StageSample({ index, stage }: { index: number; stage: ProcessStage }): 
         <div className="mk-sample">
           <p className="mk-label mk-sample-tag">Six lenses</p>
           <ul className="mk-lens-list">
-            {stage.details.map((lens, i) => (
-              <li key={lens}><strong>{lens}</strong> <span>{LENS_NOTES[i]}</span></li>
+            {LENSES.map((lens) => (
+              <li key={lens.name}><strong>{lens.name}</strong> <span>{lens.note}</span></li>
             ))}
           </ul>
         </div>
@@ -62,10 +62,10 @@ function StageSample({ index, stage }: { index: number; stage: ProcessStage }): 
         <div className="mk-sample">
           <p className="mk-label mk-sample-tag">Illustrative sample plan</p>
           <ol className="mk-plan-list">
-            {stage.details.map((item, i) => (
-              <li key={item}>
-                <span>{item}</span>
-                <span className="mk-chip mk-chip--tag">{PLAN_TAGS[i]}</span>
+            {PLAN_STEPS.map((step) => (
+              <li key={step.label}>
+                <span>{step.label}</span>
+                <span className="mk-chip mk-chip--tag">{step.tag}</span>
               </li>
             ))}
           </ol>

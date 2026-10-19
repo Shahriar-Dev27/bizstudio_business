@@ -295,12 +295,12 @@
   opacity: 0.6;
 }
 
-/* Square 44px icon control (menu toggle etc.) */
+/* Square 48px icon control (menu toggle etc.) */
 .mk-icon-button {
   --mk-shadow: var(--mk-shadow-compact);
   display: inline-grid;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   place-items: center;
   border: var(--mk-border);
   border-radius: var(--mk-radius);
@@ -322,8 +322,10 @@
 /* Text link used for navigation */
 .mk-nav-link {
   display: inline-flex;
-  min-height: 44px;
+  min-width: 48px;
+  min-height: 48px;
   align-items: center;
+  justify-content: center;
   padding: 0 4px;
   border-bottom: 2px solid transparent;
   color: var(--mk-ink);
@@ -409,9 +411,12 @@
   left: 16px;
   top: -80px;
   z-index: 100;
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
   background: var(--mk-ink);
   color: var(--mk-paper);
-  padding: 12px 16px;
+  padding: 0 16px;
   font-family: var(--mk-font-mono);
   font-size: 14px;
   text-decoration: none;
@@ -477,6 +482,7 @@
 }
 
 .mk-mobile-nav .mk-nav-link {
+  justify-content: flex-start;
   min-height: 48px;
   border-bottom: 2px solid var(--mk-ink);
 }
@@ -502,7 +508,7 @@
 
 .mk-wordmark {
   display: inline-flex;
-  min-height: 44px;
+  min-height: 48px;
   align-items: center;
   gap: 8px;
   color: var(--mk-ink);
@@ -1334,9 +1340,6 @@
   font-family: var(--mk-font-mono);
   font-size: 12px;
   font-weight: 500;
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
   text-transform: uppercase;
 }
 
@@ -1462,7 +1465,7 @@
 }
 
 @media (hover: hover) {
-  .mk-example-choice[aria-pressed="false"]:hover {
+  .mk-example-choice[aria-pressed="false"]:hover:not(:active) {
     transform: translate(-2px, -2px);
     --mk-shadow: 6px 6px 0 var(--mk-ink);
     background: var(--mk-yellow);
@@ -1470,13 +1473,14 @@
 }
 
 .mk-example-choice:active {
-  transform: translate(3px, 3px);
+  transform: translate(4px, 4px);
+  background: var(--mk-yellow);
   --mk-shadow: 1px 1px 0 var(--mk-ink);
 }
 
 /* Selected: pressed in, yellow, a checked box and a "Selected" tag; never colour alone. */
 .mk-example-choice[aria-pressed="true"] {
-  transform: translate(3px, 3px);
+  transform: translate(4px, 4px);
   --mk-shadow: 1px 1px 0 var(--mk-ink);
   background: var(--mk-yellow);
 }

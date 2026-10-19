@@ -91,7 +91,7 @@ export function CapabilitySection(): React.JSX.Element {
         </ul>
 
         <p className="mk-boundary">
-          <strong>Guidance, not live data.</strong> BizGuide has no market-research, browsing, or price-lookup tools. Any figure it gives is an illustrative estimate with stated assumptions, so check rents, prices, and rules with current local sources.
+          <strong>Guidance, not live data.</strong> BizGuide has no market-research, browsing, or price-lookup tools. Treat any figure it gives as an illustrative estimate, and check rents, prices, and rules with current local sources.
         </p>
       </div>
     </section>

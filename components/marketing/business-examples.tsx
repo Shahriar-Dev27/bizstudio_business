@@ -64,6 +64,28 @@ const EXAMPLES: readonly Example[] = [
 
 const FIRST = EXAMPLES[0];
 
+/** encodeURIComponent throws URIError on a lone surrogate (possible via paste); valid text is untouched. */
+function encodeIdea(value: string): string {
+  try {
+    return encodeURIComponent(value);
+  } catch {
+    let safe = "";
+    for (let i = 0; i < value.length; i += 1) {
+      const unit = value.charCodeAt(i);
+      const next = value.charCodeAt(i + 1);
+      if (unit >= 0xd800 && unit <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) {
+        safe += value[i] + value[i + 1];
+        i += 1;
+      } else if (unit >= 0xd800 && unit <= 0xdfff) {
+        safe += "\uFFFD";
+      } else {
+        safe += value[i];
+      }
+    }
+    return encodeURIComponent(safe);
+  }
+}
+
 export function BusinessExamples(): React.JSX.Element {
   const [selectedKey, setSelectedKey] = useState<ExampleKey>(FIRST.key);
   const [text, setText] = useState(FIRST.prompt);
@@ -73,6 +95,8 @@ export function BusinessExamples(): React.JSX.Element {
   const ready = trimmed.length >= MIN_LENGTH;
 
   function choose(example: Example) {
+    // Re-choosing the current example keeps the user's edits; only a different example replaces the draft.
+    if (example.key === selectedKey) return;
     setSelectedKey(example.key);
     setText(example.prompt);
   }
@@ -129,13 +153,13 @@ export function BusinessExamples(): React.JSX.Element {
                 className="mk-textarea"
                 aria-describedby="example-count example-helper"
               />
-              <p id="example-count" className="mk-label mk-examples-count">{text.length} / {MAX_LENGTH} characters</p>
+              <p id="example-count" className="mk-label">{text.length} / {MAX_LENGTH} characters</p>
             </div>
 
             <div className="mk-examples-action">
               {ready ? (
                 <Link
-                  href={`/advisor?idea=${encodeURIComponent(trimmed)}`}
+                  href={`/advisor?idea=${encodeIdea(trimmed)}`}
                   prefetch={false}
                   className="mk-button mk-examples-go"
                   aria-describedby="example-helper"

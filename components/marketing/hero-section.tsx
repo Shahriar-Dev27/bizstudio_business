@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { HeroForm } from "@/components/hero-form";
 
 export function HeroSection(): React.JSX.Element {
@@ -16,7 +15,7 @@ export function HeroSection(): React.JSX.Element {
             </p>
             <HeroForm appearance="marketing" />
             <div className="mk-hero-actions">
-              <Link href="/#how-it-works" className="mk-button-secondary">See how it works</Link>
+              <a href="#how-it-works" className="mk-button-secondary">See how it works</a>
             </div>
           </div>
           <aside className="mk-preview" aria-label="Example conversation">
