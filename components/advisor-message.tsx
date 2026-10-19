@@ -1,13 +1,12 @@
 "use client";
 
-import Image from "next/image";
-import { Pin, UserRound } from "lucide-react";
+import { Pin } from "lucide-react";
 import type { ChatMessage } from "@/types/advisor";
 
 // ponytail: support only the headings, bullets, and bold text the advisor emits; add a Markdown dependency only when links/tables/code are required.
 function InlineText({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return <>{parts.map((part, index) => part.startsWith("**") && part.endsWith("**") ? <strong key={index} className="font-bold text-white">{part.slice(2, -2)}</strong> : <span key={index}>{part}</span>)}</>;
+  return <>{parts.map((part, index) => part.startsWith("**") && part.endsWith("**") ? <strong key={index} className="adv-md-strong">{part.slice(2, -2)}</strong> : <span key={index}>{part}</span>)}</>;
 }
 
 function cleanLine(line: string) {
@@ -19,30 +18,29 @@ export function AdvisorMessageCard({ message, onPin, pinnedTexts }: { message: C
   const lines = message.content.split("\n").filter((line, index, array) => line.trim() || (index > 0 && array[index - 1].trim()));
 
   return (
-    <article className={`group flex gap-3 ${assistant ? "items-start" : "items-start justify-end"}`} aria-label={assistant ? "BizGuide AI message" : "Your message"}>
-      {assistant && <span className="mt-1 grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-[#53e0ff]/20 bg-[#050816] shadow-[0_8px_24px_rgba(83,224,255,.14)]"><Image src="/brand/bizguide-logo.png" alt="BizGuide AI" width={48} height={48} loading="eager" className="max-w-none scale-[1.3]" /></span>}
-      <div className={`max-w-[88%] rounded-2xl px-4 py-3.5 md:max-w-[82%] ${assistant ? "rounded-tl-sm border border-white/10 bg-white/[.045] text-[#c6cddd]" : "rounded-tr-sm bg-gradient-to-br from-[#0891b2] to-[#0369a1] text-white shadow-[0_12px_30px_rgba(8,105,148,.2)]"}`}>
-        {message.streaming && !message.content ? <div className="flex min-h-7 items-center gap-1.5" aria-label="BizGuide is thinking"><i className="size-2 animate-bounce rounded-full bg-[#53e0ff] [animation-delay:-.2s]" /><i className="size-2 animate-bounce rounded-full bg-[#0891b2] [animation-delay:-.1s]" /><i className="size-2 animate-bounce rounded-full bg-[#53e0ff]" /></div> : (
-          <div className="grid gap-2.5 text-[15px] leading-7">
-            {lines.map((line, index) => {
-              const trimmed = line.trim();
-              if (!trimmed) return <span key={index} className="h-1" />;
-              const clean = cleanLine(trimmed);
-              const heading = /^#{1,4}\s/.test(trimmed);
-              const bullet = /^[-*]\s+/.test(trimmed);
-              const numbered = /^\d+[.)]\s+/.test(trimmed);
-              const pinned = pinnedTexts.has(clean.toLowerCase());
-              return (
-                <div key={`${index}-${clean.slice(0, 18)}`} className={`relative ${assistant ? "pr-8" : ""}`}>
-                  {heading ? <h3 className="mt-2 font-display text-base font-bold text-white"><InlineText text={clean} /></h3> : bullet || numbered ? <p className="flex gap-2"><span className="mt-[11px] size-1.5 shrink-0 rounded-full bg-[#53e0ff]" /><span><InlineText text={clean} /></span></p> : <p><InlineText text={trimmed} /></p>}
-                  {assistant && clean.length > 8 && <button type="button" onClick={() => onPin(clean, message.id)} className={`absolute -right-1 top-0 grid size-8 place-items-center rounded-lg transition-opacity ${pinned ? "bg-[#53e0ff]/15 text-[#73e8ff]" : "text-[#6f7b96] opacity-60 hover:bg-white/[.07] hover:text-[#53e0ff] md:opacity-0 md:group-hover:opacity-100"}`} aria-label={pinned ? "This line is pinned" : "Pin this line"} title={pinned ? "Pinned" : "Pin this insight"}><Pin size={14} className={pinned ? "fill-current" : ""} /></button>}
-                </div>
-              );
-            })}
-          </div>
-        )}
+    <article className={`adv-message ${assistant ? "adv-message--assistant" : "adv-message--user"}`} aria-label={assistant ? "BizGuide AI message" : "Your message"} aria-busy={message.streaming ? true : undefined}>
+      <div className="adv-message-meta" aria-hidden="true">
+        {assistant ? <><span className="adv-message-badge">AI</span><span>BizGuide{message.streaming && message.content ? " · Writing…" : ""}</span></> : <span>You</span>}
       </div>
-      {!assistant && <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[.05] text-[#a9b3ca]"><UserRound size={17} /></span>}
+      {message.streaming && !message.content ? <div className="adv-thinking"><span className="adv-thinking-dots" aria-hidden="true"><i /><i /><i /></span><span className="mk-label">Thinking…</span></div> : (
+        <div className="adv-message-body">
+          {lines.map((line, index) => {
+            const trimmed = line.trim();
+            if (!trimmed) return <span key={index} className="adv-md-gap" />;
+            const clean = cleanLine(trimmed);
+            const heading = /^#{1,4}\s/.test(trimmed);
+            const bullet = /^[-*]\s+/.test(trimmed);
+            const numbered = /^\d+[.)]\s+/.test(trimmed);
+            const pinned = pinnedTexts.has(clean.toLowerCase());
+            return (
+              <div key={`${index}-${clean.slice(0, 18)}`} className={assistant ? "adv-line adv-line--pinnable" : "adv-line"}>
+                {heading ? <h3 className="adv-md-heading"><InlineText text={clean} /></h3> : bullet || numbered ? <p className="adv-md-bullet"><span className="adv-md-marker" aria-hidden="true" /><span><InlineText text={clean} /></span></p> : <p className="adv-md-p"><InlineText text={trimmed} /></p>}
+                {assistant && clean.length > 8 && <button type="button" onClick={() => onPin(clean, message.id)} className={pinned ? "adv-pin adv-pin--pinned" : "adv-pin"} aria-label={pinned ? "This line is pinned" : "Pin this line"} title={pinned ? "Pinned" : "Pin this insight"}><Pin size={18} strokeWidth={2.5} fill={pinned ? "currentColor" : "none"} aria-hidden="true" /></button>}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </article>
   );
 }

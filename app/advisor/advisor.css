@@ -440,3 +440,129 @@
 }
 
 /* ---------- Messages and notes (Task 3) ---------- */
+
+.advisor-page .adv-message {
+  min-width: 0;
+  padding: 20px;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  overflow-wrap: anywhere;
+}
+
+.advisor-page .adv-message--assistant {
+  width: 100%;
+  background: var(--mk-paper);
+  box-shadow: var(--mk-shadow-compact);
+}
+
+.advisor-page .adv-message--user {
+  justify-self: end;
+  max-width: min(88%, 640px);
+  background: var(--mk-sage);
+}
+
+.advisor-page .adv-message-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font: 500 12px/1.5 var(--mk-font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.advisor-page .adv-message-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: var(--mk-radius);
+  background: var(--mk-ink);
+  color: var(--mk-paper);
+}
+
+.advisor-page .adv-message-body {
+  display: grid;
+  gap: 12px;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.advisor-page .adv-line { position: relative; min-width: 0; }
+.advisor-page .adv-line--pinnable { min-height: 44px; padding-right: 52px; }
+.advisor-page .adv-md-p { margin: 0; }
+.advisor-page .adv-md-heading {
+  margin: 4px 0 0;
+  font: 700 16px/1.4 var(--mk-font-sans);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.advisor-page .adv-md-bullet { display: flex; gap: 10px; margin: 0; }
+.advisor-page .adv-md-bullet > span:last-child { min-width: 0; }
+.advisor-page .adv-md-marker { width: 8px; height: 8px; flex: none; margin-top: 9px; background: var(--mk-ink); }
+.advisor-page .adv-md-gap { height: 4px; }
+.advisor-page .adv-md-strong { font-weight: 700; }
+
+.advisor-page .adv-pin {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid transparent;
+  border-radius: var(--mk-radius);
+  background: transparent;
+  color: var(--mk-ink);
+  cursor: pointer;
+}
+.advisor-page .adv-pin:hover,
+.advisor-page .adv-pin--pinned { border-color: var(--mk-ink); background: var(--mk-yellow); }
+
+.advisor-page .adv-thinking { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.advisor-page .adv-thinking-dots { display: flex; gap: 6px; }
+.advisor-page .adv-thinking-dots i { width: 8px; height: 8px; background: var(--mk-ink); animation: adv-thinking-pulse 1.2s ease-in-out infinite; }
+.advisor-page .adv-thinking-dots i:nth-child(2) { animation-delay: 150ms; }
+.advisor-page .adv-thinking-dots i:nth-child(3) { animation-delay: 300ms; }
+@keyframes adv-thinking-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.advisor-page .adv-notes { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--mk-yellow); }
+.advisor-page .adv-notes-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; background: var(--mk-ink); color: var(--mk-paper); border-bottom: var(--mk-border); }
+.advisor-page .adv-notes-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.advisor-page .adv-notes-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border: 2px solid var(--mk-paper); border-radius: var(--mk-radius); background: var(--mk-ink); }
+.advisor-page .adv-notes-title { margin: 0; font: 700 18px/1.3 var(--mk-font-sans); letter-spacing: -0.02em; }
+.advisor-page .adv-notes-count { margin: 2px 0 0; font: 500 11px/1.5 var(--mk-font-mono); letter-spacing: 0.02em; }
+.advisor-page .adv-notes-close { flex: none; width: 44px; height: 44px; }
+.advisor-page .adv-note-form { display: grid; gap: 8px; padding: 16px; border-bottom: var(--mk-border); }
+.advisor-page .adv-note-form-row { display: flex; gap: 8px; }
+.advisor-page .adv-note-input { flex: 1; width: 100%; min-width: 0; min-height: 48px; border: var(--mk-border); border-radius: var(--mk-radius); background: var(--mk-paper); color: var(--mk-ink); padding: 0 12px; font: 400 16px/1.5 var(--mk-font-sans); }
+.advisor-page .adv-note-input::placeholder { color: var(--mk-ink); opacity: 0.75; }
+.advisor-page .adv-note-add { flex: none; }
+.advisor-page .adv-notes-list-wrap { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px 20px 24px 16px; }
+.advisor-page .adv-notes-list { display: grid; gap: 16px; }
+.advisor-page .adv-notes-empty { display: grid; justify-items: center; align-content: center; min-height: 240px; border: 2px dashed var(--mk-ink); border-radius: var(--mk-radius); padding: 24px 16px; text-align: center; }
+.advisor-page .adv-notes-empty-title { margin: 16px 0 8px; font-size: 26px; line-height: 1.15; }
+.advisor-page .adv-notes-empty-text { margin: 0; max-width: 24ch; font-size: 14px; line-height: 1.6; }
+.advisor-page .adv-note { min-width: 0; border: var(--mk-border); border-radius: var(--mk-radius); padding: 14px; background: var(--mk-paper); box-shadow: var(--mk-shadow-compact); }
+.advisor-page .adv-note-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; line-height: 1.65; }
+.advisor-page .adv-note-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; }
+.advisor-page .adv-note-foot .mk-label { font-size: 10px; }
+.advisor-page .adv-note-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.advisor-page .adv-note-action { display: inline-flex; justify-content: center; align-items: center; gap: 6px; min-width: 44px; min-height: 44px; padding: 0 8px; border: 2px solid transparent; border-radius: var(--mk-radius); background: transparent; color: var(--mk-ink); font: 500 11px/1.4 var(--mk-font-mono); text-transform: uppercase; cursor: pointer; }
+.advisor-page .adv-note-action:hover { border-color: var(--mk-ink); background: var(--mk-yellow); }
+.advisor-page .adv-note-edit { display: block; width: 100%; min-height: 110px; resize: vertical; border: var(--mk-border); border-radius: var(--mk-radius); background: var(--mk-paper); color: var(--mk-ink); padding: 10px; font: 400 16px/1.6 var(--mk-font-sans); }
+.advisor-page .adv-note-edit-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+.advisor-page .adv-note-btn { padding: 0 12px; font-size: 12px; }
+
+@media (max-width: 767px) {
+  .advisor-page .adv-message { padding: 16px 12px; }
+  .advisor-page .adv-line--pinnable { padding-right: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .advisor-page .adv-thinking-dots i { animation: none; opacity: 1; }
+}
