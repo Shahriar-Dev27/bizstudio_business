@@ -62,7 +62,7 @@ export const PROCESS_STAGES: readonly ProcessStage[] = [
     id: "process-context",
     number: "02",
     title: "Add your context",
-    description: "When a missing detail would change the advice, the advisor asks one to three focused questions. Your answers become context that stays in view.",
+    description: "When a missing detail would change the advice, the advisor asks one to three focused questions. Your answers become context the advisor keeps using in the conversation.",
     details: ["Which neighborhood?", "Who will buy?", "What experience do you have?"],
   },
   {

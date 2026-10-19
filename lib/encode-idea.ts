@@ -11,7 +11,7 @@ export function encodeIdea(value: string): string {
         safe += value[i] + value[i + 1];
         i += 1;
       } else if (unit >= 0xd800 && unit <= 0xdfff) {
-        safe += "�";
+        safe += "\uFFFD";
       } else {
         safe += value[i];
       }

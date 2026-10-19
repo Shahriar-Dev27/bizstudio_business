@@ -42,7 +42,7 @@ function StageSample({ index, stage }: { index: number; stage: ProcessStage }): 
             {stage.details.map((question) => <li key={question}>{question}</li>)}
           </ul>
           <p className="mk-sample-chips">
-            <span className="mk-label">Context kept in view</span>
+            <span className="mk-label">Context the advisor keeps using</span>
             {CONTEXT_CHIPS.map((chip) => <span key={chip} className="mk-chip">{chip}</span>)}
           </p>
         </div>

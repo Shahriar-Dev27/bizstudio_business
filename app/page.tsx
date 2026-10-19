@@ -21,7 +21,7 @@ export default function HomePage() {
     <div className={`marketing-page ${spaceGrotesk.variable} ${plexMono.variable} ${josefinSlab.variable}`}>
       <HashLink hash="main" className="mk-skip-link">Skip to content</HashLink>
       <SiteHeader />
-      <main id="main">
+      <main id="main" tabIndex={-1} className="mk-main">
         <HeroSection />
         <CapabilitySection />
         <HowItWorks />
