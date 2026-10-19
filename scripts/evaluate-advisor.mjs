@@ -91,10 +91,6 @@ for (const test of cases.filter((c) =>
       await new Promise((resolve) => setTimeout(resolve, 30000));
     }
     if (!response?.ok) throw Error(`HTTP ${response?.status}`);
-    if (response.status === 202)
-      throw Error(
-        "Use the local streaming route for this evaluation; deployed jobs require a session-aware runner.",
-      );
     const decoder = new TextDecoder();
     let buffer = "";
     for await (const bytes of response.body) {

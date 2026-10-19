@@ -9,17 +9,11 @@ export type Deadlines = {
   idleMs: number;
   totalMs: number;
 };
-const envMs = (key: string, fallback: number) => {
-  const n = Number(process.env[key]);
-  return Number.isFinite(n) && n >= 1000 && n <= 840000 ? n : fallback;
+const DEFAULT_DEADLINES: Deadlines = {
+  firstContentMs: 45000,
+  idleMs: 45000,
+  totalMs: 180000,
 };
-export function providerDeadlines(): Deadlines {
-  return {
-    firstContentMs: envMs("ADVISOR_FIRST_TOKEN_MS", 45000),
-    idleMs: envMs("ADVISOR_IDLE_MS", 45000),
-    totalMs: envMs("ADVISOR_TOTAL_MS", 180000),
-  };
-}
 export function buildAdvisorMessages(request: AdvisorRequest): WireMessage[] {
   return request.messages.map((message, index) =>
     index === request.messages.length - 1
@@ -101,7 +95,7 @@ export async function openNvidiaStream(
     }
     return { events: events(), close: async () => undefined };
   }
-  const deadlines = options.deadlines || providerDeadlines(),
+  const deadlines = options.deadlines || DEFAULT_DEADLINES,
     controller = new AbortController();
   let first: ReturnType<typeof setTimeout> | undefined,
     idle: ReturnType<typeof setTimeout> | undefined;

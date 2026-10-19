@@ -26,6 +26,10 @@
 }
 
 .advisor-page .adv-shell {
+  /* Keep the workspace header in the viewport even when the document restores
+     a scroll position from another route. Only the transcript should scroll. */
+  position: fixed;
+  inset: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   height: 100vh;

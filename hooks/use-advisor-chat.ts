@@ -23,7 +23,6 @@ type Active = {
   controller: AbortController;
   attemptId: string;
   conversationId: string;
-  jobId?: string;
 };
 export function useAdvisorChat() {
   const [state, dispatch] = useReducer(
@@ -49,11 +48,6 @@ export function useAdvisorChat() {
   const stop = useCallback(() => {
     const current = active.current;
     if (!current) return;
-    if (current.jobId)
-      void fetch(`/api/advisor/jobs/${current.jobId}`, {
-        method: "DELETE",
-        keepalive: true,
-      }).catch(() => undefined);
     current.controller.abort();
   }, []);
   useEffect(() => {
@@ -250,100 +244,22 @@ export function useAdvisorChat() {
             response.status,
           );
         }
-        if (response.status === 202) {
-          const job = (await response.json()) as {
-            jobId: string;
-            requestId: string;
-          };
-          if (!/^[a-f0-9-]{36}$/.test(job.jobId))
+        if (!response.body) throw new ChatError("protocol_error", 502);
+        for await (const frame of readSse(response.body, controller.signal)) {
+          let event: ChatEvent;
+          try {
+            event = JSON.parse(frame.data);
+          } catch {
             throw new ChatError("protocol_error", 502);
-          current.jobId = job.jobId;
-          let received = 0;
-          while (!terminal) {
-            if (controller.signal.aborted) throw controller.signal.reason;
-            const progress = await fetch(`/api/advisor/jobs/${job.jobId}`, {
-              signal: controller.signal,
-              cache: "no-store",
-            });
-            if (!progress.ok) throw new ChatError("provider_unavailable", 502);
-            const data = (await progress.json()) as {
-              attemptId: string;
-              status: string;
-              phase: "thinking" | "typing";
-              content: string;
-              error?: string;
-            };
-            if (
-              data.attemptId !== attemptId ||
-              typeof data.content !== "string"
-            )
-              throw new ChatError("protocol_error", 502);
-            consume({
-              type: "progress",
-              phase: data.phase === "typing" ? "typing" : "thinking",
-              requestId: job.requestId,
-              attemptId,
-            });
-            if (data.content.length > received) {
-              consume({
-                type: "delta",
-                text: data.content.slice(received),
-                requestId: job.requestId,
-                attemptId,
-              });
-              received = data.content.length;
-            }
-            if (data.status === "complete" || data.status === "truncated")
-              consume({
-                type: "finish",
-                reason: data.status === "truncated" ? "length" : "stop",
-                requestId: job.requestId,
-                attemptId,
-              });
-            else if (data.status === "interrupted" || data.status === "failed")
-              consume({
-                type: "error",
-                code:
-                  data.error && data.error in ERROR_MESSAGES
-                    ? (data.error as keyof typeof ERROR_MESSAGES)
-                    : "provider_unavailable",
-                retryable: true,
-                requestId: job.requestId,
-                attemptId,
-              });
-            if (!terminal)
-              await new Promise<void>((resolve, reject) => {
-                const abort = () => {
-                  clearTimeout(timer);
-                  reject(controller.signal.reason);
-                };
-                const timer = setTimeout(() => {
-                  controller.signal.removeEventListener("abort", abort);
-                  resolve();
-                }, 1000);
-                controller.signal.addEventListener("abort", abort, {
-                  once: true,
-                });
-              });
           }
-        } else {
-          if (!response.body) throw new ChatError("protocol_error", 502);
-          for await (const frame of readSse(response.body, controller.signal)) {
-            let event: ChatEvent;
-            try {
-              event = JSON.parse(frame.data);
-            } catch {
-              throw new ChatError("protocol_error", 502);
-            }
-            if (
-              !event ||
-              !["start", "progress", "delta", "finish", "error"].includes(
-                event.type,
-              )
+          if (
+            !event ||
+            !["start", "progress", "delta", "finish", "error"].includes(
+              event.type,
             )
-              throw new ChatError("protocol_error", 502);
-            consume(event);
-          }
+          )
+            throw new ChatError("protocol_error", 502);
+          consume(event);
         }
         flush();
         if (!terminal) throw new ChatError("protocol_error", 502);

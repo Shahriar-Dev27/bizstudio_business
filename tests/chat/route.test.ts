@@ -27,10 +27,13 @@ it("rejects cross-origin requests before contacting the model", async () => {
   );
   expect(response.status).toBe(403);
 });
-it("returns app events with safe errors and private cache headers", async () => {
+it("streams in production with only the NVIDIA key configured", async () => {
   vi.stubEnv("NVIDIA_API_KEY", "test-key");
-  vi.stubEnv("NODE_ENV", "test");
+  vi.stubEnv("NODE_ENV", "production");
   vi.stubEnv("NETLIFY", "");
+  vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+  vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+  vi.stubEnv("ADVISOR_SESSION_SECRET", "");
   vi.stubGlobal(
     "fetch",
     async () =>
@@ -54,6 +57,7 @@ it("returns app events with safe errors and private cache headers", async () => 
     }),
   );
   expect(response.status).toBe(200);
+  expect(response.headers.get("set-cookie")).toBeNull();
   expect(response.headers.get("cache-control")).toContain("no-store");
   const body = await response.text();
   expect(body).toContain('"type":"finish"');

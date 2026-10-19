@@ -1,6 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
-const jobId = "11111111-1111-4111-8111-111111111111";
 const steps = [
   {
     id: "research",
@@ -53,40 +52,32 @@ async function send(page: Page, text: string) {
   await page.getByRole("textbox", { name: "Ask BizGuide AI" }).fill(text);
   await page.getByRole("button", { name: "Send message", exact: true }).click();
 }
-test("buffers unfinished output, shows typing, then reveals the completed result", async ({
+test("shows thinking while waiting, then reveals the completed streamed result", async ({
   page,
 }) => {
-  let attempt = "",
-    finish = false;
+  let finish!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
   await page.route("**/api/advisor/chat", async (route) => {
-    attempt = route.request().postDataJSON().attemptId;
+    await waiting;
     await route.fulfill({
-      status: 202,
-      json: { jobId, requestId: "r", attemptId: attempt },
+      contentType: "text/event-stream",
+      body: wire(
+        route.request().postDataJSON().attemptId,
+        "A precise completed recommendation.",
+      ),
     });
   });
-  await page.route("**/api/advisor/jobs/*", async (route) =>
-    route.fulfill({
-      json: {
-        id: jobId,
-        requestId: "r",
-        attemptId: attempt,
-        status: finish ? "complete" : "streaming",
-        phase: "typing",
-        content: "A precise completed recommendation.",
-        updatedAt: Date.now(),
-      },
-    }),
-  );
   await ready(page);
   await send(page, "Help me test demand");
   await expect(
-    page.getByText("AI is typing", { exact: true }).first(),
+    page.getByText("AI is thinking", { exact: true }).first(),
   ).toBeVisible();
   await expect(
     page.getByText("A precise completed recommendation.", { exact: true }),
   ).toHaveCount(0);
-  finish = true;
+  finish();
   await expect(
     page.getByText("A precise completed recommendation.", { exact: true }),
   ).toBeVisible();
@@ -94,22 +85,25 @@ test("buffers unfinished output, shows typing, then reveals the completed result
     0,
   );
 });
-test("keeps partial text on Stop and retries the same user turn", async ({
+test("keeps interrupted stream text and retries the same user turn", async ({
   page,
 }) => {
-  let attempt = "",
-    calls = 0,
-    deleted = false;
+  let calls = 0;
   const payloads: unknown[] = [];
   await page.route("**/api/advisor/chat", async (route) => {
     calls++;
     const input = route.request().postDataJSON();
     payloads.push(input.messages);
-    attempt = input.attemptId;
+    const attempt = input.attemptId;
     if (calls === 1)
       await route.fulfill({
-        status: 202,
-        json: { jobId, requestId: "r", attemptId: attempt },
+        contentType: "text/event-stream",
+        body: `data: ${JSON.stringify({
+          type: "delta",
+          requestId: "r",
+          attemptId: attempt,
+          text: "Useful partial business advice.",
+        })}\n\n`,
       });
     else
       await route.fulfill({
@@ -117,34 +111,11 @@ test("keeps partial text on Stop and retries the same user turn", async ({
         body: wire(attempt, "Recovered final advice."),
       });
   });
-  await page.route("**/api/advisor/jobs/*", async (route) => {
-    if (route.request().method() === "DELETE") {
-      deleted = true;
-      await route.fulfill({ json: { stopped: true } });
-      return;
-    }
-    await route.fulfill({
-      json: {
-        id: jobId,
-        requestId: "r",
-        attemptId: attempt,
-        status: "streaming",
-        phase: "typing",
-        content: "Useful partial business advice.",
-        updatedAt: Date.now(),
-      },
-    });
-  });
   await ready(page);
   await send(page, "Test my demand first");
   await expect(
-    page.getByText("AI is typing", { exact: true }).first(),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Stop response" }).click();
-  await expect(
     page.getByText("Useful partial business advice.", { exact: true }),
   ).toBeVisible();
-  await expect.poll(() => deleted).toBe(true);
   await page.getByRole("button", { name: "Retry this question" }).click();
   await expect(page.getByText("Recovered final advice.")).toBeVisible();
   await expect(

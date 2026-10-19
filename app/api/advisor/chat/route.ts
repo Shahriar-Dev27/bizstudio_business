@@ -1,18 +1,15 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { readBoundedJson, validateAdvisorRequest } from "@/lib/chat/history";
 import { openNvidiaStream, buildProviderBody } from "@/lib/chat/provider";
-import { reserveGeneration, settleGeneration } from "@/lib/chat/admission";
-import { getAnonymousSession, hashIp } from "@/lib/chat/session";
-import { createGenerationJob } from "@/lib/chat/jobs";
 import { ChatError } from "@/lib/chat/errors";
 import { encodeChatEvent } from "@/lib/chat/sse";
 import { recordChatMetric } from "@/lib/chat/telemetry";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 export async function POST(request: NextRequest) {
   const requestId = crypto.randomUUID(),
     started = Date.now();
-  let reservation: string | undefined;
   try {
     const origin = request.headers.get("origin");
     if (origin && origin !== new URL(request.url).origin)
@@ -27,32 +24,11 @@ export async function POST(request: NextRequest) {
     const input = validateAdvisorRequest(await readBoundedJson(request));
     if (!process.env.NVIDIA_API_KEY?.trim())
       throw new ChatError("not_configured", 503);
-    const session = getAnonymousSession(request),
-      providerBody = buildProviderBody(input);
-    reservation = await reserveGeneration({
-      sessionId: session.id,
-      ipKey: hashIp(request),
-      attemptId: input.attemptId,
-      maxOutputTokens: providerBody.max_tokens,
-    });
+    const providerBody = buildProviderBody(input);
     const headers: Record<string, string> = {
       "Cache-Control": "no-store, no-transform",
       "X-Request-ID": requestId,
     };
-    if (session.cookie) headers["Set-Cookie"] = session.cookie;
-    if (process.env.NETLIFY === "true") {
-      const id = await createGenerationJob(
-        input,
-        session.id,
-        requestId,
-        reservation,
-      );
-      reservation = undefined;
-      return NextResponse.json(
-        { jobId: id, requestId, attemptId: input.attemptId },
-        { status: 202, headers },
-      );
-    }
     const controller = new AbortController();
     const abort = () => controller.abort();
     request.signal.addEventListener("abort", abort, { once: true });
@@ -66,8 +42,6 @@ export async function POST(request: NextRequest) {
       request.signal.removeEventListener("abort", abort);
       throw error;
     }
-    const id = reservation;
-    reservation = undefined;
     let firstContentMs: number | undefined;
     const stream = new ReadableStream<Uint8Array>({
       async start(output) {
@@ -98,9 +72,6 @@ export async function POST(request: NextRequest) {
         } finally {
           request.signal.removeEventListener("abort", abort);
           await opened.close();
-          await settleGeneration(id!, { outcome, generatedTokens }).catch(
-            () => undefined,
-          );
           recordChatMetric({
             requestId,
             model: providerBody.model,
@@ -126,10 +97,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    if (reservation)
-      await settleGeneration(reservation, { outcome: "failed" }).catch(
-        () => undefined,
-      );
     const failure =
       error instanceof ChatError
         ? error
