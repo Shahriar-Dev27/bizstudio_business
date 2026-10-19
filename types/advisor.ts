@@ -4,6 +4,12 @@ export type ChatMessage = {
   content: string;
   createdAt: number;
   streaming?: boolean;
+  turnId?: string;
+  attemptId?: string;
+  status?: import("./chat").MessageStatus;
+  welcome?: boolean;
+  attempts?: import("./chat").AttemptSnapshot[];
+  error?: string;
 };
 
 export type PinnedNote = {
@@ -11,6 +17,8 @@ export type PinnedNote = {
   text: string;
   sourceMessageId?: string;
   createdAt: number;
+  conversationId?: string;
+  kind?: "selection" | "step" | "personal";
 };
 
 export type AnalysisSection = {

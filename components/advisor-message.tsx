@@ -1,48 +1,314 @@
-"use client";
-
-import Image from "next/image";
-import { Pin, UserRound } from "lucide-react";
+﻿"use client";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Clipboard, Pin } from "lucide-react";
 import type { ChatMessage } from "@/types/advisor";
-
-// ponytail: support only the headings, bullets, and bold text the advisor emits; add a Markdown dependency only when links/tables/code are required.
-function InlineText({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return <>{parts.map((part, index) => part.startsWith("**") && part.endsWith("**") ? <strong key={index} className="font-bold text-white">{part.slice(2, -2)}</strong> : <span key={index}>{part}</span>)}</>;
+import type { Locale } from "@/types/chat";
+import { extractRoadmap } from "@/lib/chat/roadmap";
+import { strings } from "@/lib/chat/strings";
+import { RoadmapView } from "./chat/roadmap-view";
+type Props = {
+  message: ChatMessage;
+  onPin: (
+    text: string,
+    messageId?: string,
+    kind?: "selection" | "step" | "personal",
+  ) => void;
+  pinnedTexts: Set<string>;
+  phase?: "idle" | "thinking" | "typing";
+  locale?: Locale;
+  completedSteps?: Record<string, boolean>;
+  onToggleStep?: (key: string, done: boolean) => void;
+  onRetry?: (turnId: string) => void;
+  onContinue?: (turnId: string) => void;
+  busy?: boolean;
+};
+export function selectedAnswerText(
+  root: HTMLElement | null,
+  selection: Selection | null,
+): string {
+  if (
+    !root ||
+    !selection ||
+    selection.isCollapsed ||
+    selection.rangeCount !== 1
+  )
+    return "";
+  const range = selection.getRangeAt(0);
+  if (
+    !root.contains(range.startContainer) ||
+    !root.contains(range.endContainer)
+  )
+    return "";
+  return selection.toString().trim();
 }
-
-function cleanLine(line: string) {
-  return line.replace(/^#{1,4}\s*/, "").replace(/^[-*]\s+/, "").replace(/^\d+[.)]\s+/, "").replace(/\*\*/g, "").trim();
-}
-
-export function AdvisorMessageCard({ message, onPin, pinnedTexts }: { message: ChatMessage; onPin: (text: string, sourceMessageId: string) => void; pinnedTexts: Set<string> }) {
-  const assistant = message.role === "assistant";
-  const lines = message.content.split("\n").filter((line, index, array) => line.trim() || (index > 0 && array[index - 1].trim()));
-
+function MessageCard({
+  message,
+  onPin,
+  pinnedTexts,
+  phase = "thinking",
+  locale = "en",
+  completedSteps,
+  onToggleStep,
+  onRetry,
+  onContinue,
+  busy,
+}: Props) {
+  const t = strings(locale),
+    root = useRef<HTMLDivElement>(null),
+    [selected, setSelected] = useState(""),
+    [feedback, setFeedback] = useState(""),
+    [selectionPosition, setSelectionPosition] = useState({ top: 0, left: 12 });
+  const assistant = message.role === "assistant",
+    waiting =
+      assistant &&
+      (message.status === "pending" ||
+        message.status === "streaming" ||
+        message.streaming);
+  const parsed = useMemo(
+    () =>
+      waiting
+        ? { prose: "", roadmap: null, invalid: false }
+        : extractRoadmap(message.content),
+    [message.content, waiting],
+  );
+  useEffect(() => {
+    if (!selected) return;
+    const clear = () => {
+      if (!selectedAnswerText(root.current, window.getSelection()))
+        setSelected("");
+    };
+    document.addEventListener("selectionchange", clear);
+    return () => document.removeEventListener("selectionchange", clear);
+  }, [selected]);
+  function capture() {
+    const selection = window.getSelection(),
+      value = selectedAnswerText(root.current, selection);
+    setSelected(value);
+    if (value && selection) {
+      const rect = selection.getRangeAt(0).getBoundingClientRect();
+      setSelectionPosition({
+        top: Math.max(8, Math.min(window.innerHeight - 85, rect.bottom + 8)),
+        left: Math.max(12, Math.min(window.innerWidth - 330, rect.left)),
+      });
+    }
+    setFeedback(
+      value.length > 500
+        ? locale === "bn"
+          ? "৫০০ অক্ষরের মধ্যে লেখা নির্বাচন করুন।"
+          : "Select at most 500 characters to pin."
+        : "",
+    );
+  }
+  function pin() {
+    if (!selected || selected.length > 500) return;
+    onPin(selected, message.id, "selection");
+    setSelected("");
+    window.getSelection()?.removeAllRanges();
+  }
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(selected);
+      setFeedback(locale === "bn" ? "কপি হয়েছে" : "Copied");
+    } catch {
+      setFeedback(
+        locale === "bn"
+          ? "কপি করা যায়নি। নির্বাচিত লেখা নিজে কপি করুন।"
+          : "Copy failed. Use your browser's copy command.",
+      );
+    }
+  }
+  const status =
+    message.status === "truncated"
+      ? t.truncated
+      : message.status === "interrupted"
+        ? t.interrupted
+        : message.status === "failed"
+          ? t.failed
+          : "";
   return (
-    <article className={`group flex gap-3 ${assistant ? "items-start" : "items-start justify-end"}`} aria-label={assistant ? "BizGuide AI message" : "Your message"}>
-      {assistant && <span className="mt-1 grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-[#53e0ff]/20 bg-[#050816] shadow-[0_8px_24px_rgba(83,224,255,.14)]"><Image src="/brand/bizguide-logo.png" alt="BizGuide AI" width={48} height={48} loading="eager" className="max-w-none scale-[1.3]" /></span>}
-      <div className={`max-w-[88%] rounded-2xl px-4 py-3.5 md:max-w-[82%] ${assistant ? "rounded-tl-sm border border-white/10 bg-white/[.045] text-[#c6cddd]" : "rounded-tr-sm bg-gradient-to-br from-[#0891b2] to-[#0369a1] text-white shadow-[0_12px_30px_rgba(8,105,148,.2)]"}`}>
-        {message.streaming && !message.content ? <div className="flex min-h-7 items-center gap-1.5" aria-label="BizGuide is thinking"><i className="size-2 animate-bounce rounded-full bg-[#53e0ff] [animation-delay:-.2s]" /><i className="size-2 animate-bounce rounded-full bg-[#0891b2] [animation-delay:-.1s]" /><i className="size-2 animate-bounce rounded-full bg-[#53e0ff]" /></div> : (
-          <div className="grid gap-2.5 text-[15px] leading-7">
-            {lines.map((line, index) => {
-              const trimmed = line.trim();
-              if (!trimmed) return <span key={index} className="h-1" />;
-              const clean = cleanLine(trimmed);
-              const heading = /^#{1,4}\s/.test(trimmed);
-              const bullet = /^[-*]\s+/.test(trimmed);
-              const numbered = /^\d+[.)]\s+/.test(trimmed);
-              const pinned = pinnedTexts.has(clean.toLowerCase());
-              return (
-                <div key={`${index}-${clean.slice(0, 18)}`} className={`relative ${assistant ? "pr-8" : ""}`}>
-                  {heading ? <h3 className="mt-2 font-display text-base font-bold text-white"><InlineText text={clean} /></h3> : bullet || numbered ? <p className="flex gap-2"><span className="mt-[11px] size-1.5 shrink-0 rounded-full bg-[#53e0ff]" /><span><InlineText text={clean} /></span></p> : <p><InlineText text={trimmed} /></p>}
-                  {assistant && clean.length > 8 && <button type="button" onClick={() => onPin(clean, message.id)} className={`absolute -right-1 top-0 grid size-8 place-items-center rounded-lg transition-opacity ${pinned ? "bg-[#53e0ff]/15 text-[#73e8ff]" : "text-[#6f7b96] opacity-60 hover:bg-white/[.07] hover:text-[#53e0ff] md:opacity-0 md:group-hover:opacity-100"}`} aria-label={pinned ? "This line is pinned" : "Pin this line"} title={pinned ? "Pinned" : "Pin this insight"}><Pin size={14} className={pinned ? "fill-current" : ""} /></button>}
-                </div>
-              );
-            })}
-          </div>
+    <article
+      className={`adv-message adv-message--${assistant ? "assistant" : "user"}`}
+      aria-label={assistant ? "BizGuide AI message" : "Your message"}
+      aria-busy={waiting || undefined}
+      lang={/[\u0980-\u09ff]/.test(message.content) ? "bn" : undefined}
+    >
+      <div className="adv-message-meta">
+        {assistant ? (
+          <>
+            <span className="adv-message-badge" aria-hidden="true">
+              AI
+            </span>
+            <span>BizGuide</span>
+          </>
+        ) : (
+          <span>{locale === "bn" ? "আপনি" : "You"}</span>
         )}
       </div>
-      {!assistant && <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[.05] text-[#a9b3ca]"><UserRound size={17} /></span>}
+      {waiting ? (
+        <div className="adv-preparing">
+          <div className="adv-thinking">
+            <span className="adv-thinking-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span>{phase === "typing" ? t.typing : t.thinking}</span>
+          </div>
+          <p>{phase === "typing" ? t.working : t.preparing}</p>
+        </div>
+      ) : (
+        <>
+          <div
+            ref={root}
+            className="adv-message-body adv-markdown"
+            onMouseUp={capture}
+            onKeyUp={capture}
+            onTouchEnd={() => setTimeout(capture, 0)}
+          >
+            {assistant ? (
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                skipHtml
+                components={{
+                  a: ({ href, children }) => (
+                    <a
+                      href={
+                        href && /^(https?:|mailto:|#|\/)/i.test(href)
+                          ? href
+                          : undefined
+                      }
+                      target={href?.startsWith("http") ? "_blank" : undefined}
+                      rel="noopener noreferrer"
+                    >
+                      {children}
+                    </a>
+                  ),
+                  table: ({ children }) => (
+                    <div
+                      className="adv-table-scroll"
+                      tabIndex={0}
+                      role="region"
+                      aria-label={
+                        locale === "bn" ? "তথ্য সারণি" : "Answer table"
+                      }
+                    >
+                      <table>{children}</table>
+                    </div>
+                  ),
+                }}
+              >
+                {parsed.prose}
+              </Markdown>
+            ) : (
+              <p className="adv-user-text">{message.content}</p>
+            )}
+            {assistant && parsed.roadmap && (
+              <RoadmapView
+                roadmap={parsed.roadmap}
+                messageId={message.id}
+                completed={completedSteps}
+                onToggle={onToggleStep}
+                onPin={(text) => onPin(text, message.id, "step")}
+                locale={locale}
+              />
+            )}
+          </div>
+          {parsed.invalid && (
+            <p className="adv-turn-warning">
+              {locale === "bn"
+                ? "চিত্রটি তৈরি করা যায়নি। লিখিত ধাপগুলো দেখুন বা আবার রোডম্যাপ চাইতে পারেন।"
+                : "The diagram could not be prepared. Use the written steps or ask for the roadmap again."}
+            </p>
+          )}
+          {assistant && selected && (
+            <div
+              className="adv-selection-tools"
+              style={{ position: "fixed", ...selectionPosition }}
+              role="toolbar"
+              aria-label={
+                locale === "bn"
+                  ? "নির্বাচিত লেখার কাজ"
+                  : "Selected text actions"
+              }
+            >
+              <span>{Array.from(selected).length}/500</span>
+              <button
+                type="button"
+                disabled={
+                  selected.length > 500 ||
+                  pinnedTexts.has(selected.toLowerCase())
+                }
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={pin}
+              >
+                <Pin size={15} aria-hidden="true" />
+                {t.pinSelection}
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => void copy()}
+              >
+                <Clipboard size={15} aria-hidden="true" />
+                {t.copySelection}
+              </button>
+            </div>
+          )}
+          {feedback && (
+            <p role="status" className="adv-turn-warning">
+              {feedback}
+            </p>
+          )}
+          {assistant && !message.welcome && message.content && (
+            <p className="adv-select-hint">{t.selectHint}</p>
+          )}
+          {status && (
+            <div className="adv-turn-status">
+              <p role="status">{status}</p>
+              {message.turnId && (
+                <div className="adv-turn-actions">
+                  {onRetry && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="mk-button-secondary"
+                      onClick={() => onRetry(message.turnId!)}
+                    >
+                      {t.retry}
+                    </button>
+                  )}
+                  {onContinue && message.content && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="mk-button-secondary"
+                      onClick={() => onContinue(message.turnId!)}
+                    >
+                      {t.continue}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {!!message.attempts?.length && (
+            <details className="adv-attempts">
+              <summary>
+                {t.previous} ({message.attempts.length})
+              </summary>
+              {message.attempts.map((a) => (
+                <div key={a.attemptId}>
+                  <p className="mk-label">{a.status}</p>
+                  <p>{a.content}</p>
+                </div>
+              ))}
+            </details>
+          )}
+        </>
+      )}
     </article>
   );
 }
+export const AdvisorMessageCard = memo(MessageCard);

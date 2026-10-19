@@ -1,0 +1,22 @@
+name: Chat checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chrome
+      - name: Browser regressions with mocked provider
+        run: |
+          npm run start > /tmp/bizguide-server.log 2>&1 &
+          node --input-type=module -e 'for(let i=0;i<60;i++){try{if((await fetch("http://localhost:3000")).ok)process.exit(0)}catch{}await new Promise(r=>setTimeout(r,1000))}process.exit(1)'
+          npm run test:e2e

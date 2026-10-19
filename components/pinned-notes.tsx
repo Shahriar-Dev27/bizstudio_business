@@ -1,27 +1,231 @@
-"use client";
-
-import { Check, Clipboard, NotebookPen, Pin, Plus, Trash2, X } from "lucide-react";
-import { FormEvent, useState } from "react";
+﻿"use client";
+import {
+  Check,
+  Clipboard,
+  NotebookPen,
+  Pin,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
+import { FormEvent, useId, useState } from "react";
 import type { PinnedNote } from "@/types/advisor";
-
-export function PinnedNotes({ notes, onAdd, onUpdate, onRemove, onClose }: { notes: PinnedNote[]; onAdd: (text: string) => void; onUpdate: (id: string, text: string) => void; onRemove: (id: string) => void; onClose?: () => void }) {
-  const [draft, setDraft] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingText, setEditingText] = useState("");
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  function addNote(event: FormEvent) { event.preventDefault(); const value = draft.trim(); if (!value) return; onAdd(value); setDraft(""); }
-  async function copy(note: PinnedNote) { await navigator.clipboard.writeText(note.text); setCopiedId(note.id); window.setTimeout(() => setCopiedId(null), 1400); }
-  function save(note: PinnedNote) { const value = editingText.trim(); if (value) onUpdate(note.id, value); setEditingId(null); }
-
+import type { Locale } from "@/types/chat";
+import { strings } from "@/lib/chat/strings";
+export function PinnedNotes({
+  notes,
+  onAdd,
+  onUpdate,
+  onRemove,
+  onClose,
+  locale = "en",
+}: {
+  notes: PinnedNote[];
+  onAdd: (text: string) => void;
+  onUpdate: (id: string, text: string) => void;
+  onRemove: (id: string) => void;
+  onClose?: () => void;
+  locale?: Locale;
+}) {
+  const t = strings(locale),
+    [draft, setDraft] = useState(""),
+    [editingId, setEditingId] = useState<string | null>(null),
+    [editingText, setEditingText] = useState(""),
+    [copiedId, setCopiedId] = useState<string | null>(null),
+    [copyError, setCopyError] = useState(""),
+    id = useId();
+  function addNote(event: FormEvent) {
+    event.preventDefault();
+    const clean = draft.trim();
+    if (clean) {
+      onAdd(clean);
+      setDraft("");
+    }
+  }
+  async function copy(note: PinnedNote) {
+    try {
+      await navigator.clipboard.writeText(note.text);
+      setCopiedId(note.id);
+      setCopyError("");
+    } catch {
+      setCopyError(
+        locale === "bn"
+          ? "কপি করা যায়নি। লেখাটি নির্বাচন করে নিজে কপি করুন।"
+          : "Copy failed. Select the note text and use your browser's copy command.",
+      );
+    }
+  }
   return (
-    <aside className="flex h-full min-h-0 flex-col bg-[#080d1b]" aria-label="Pinned business notes">
-      <div className="flex items-center justify-between border-b border-white/10 px-5 py-4"><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-[#53e0ff]/10 text-[#53e0ff]"><NotebookPen size={18} /></span><div><h2 className="font-display text-sm font-bold">Pinned notes</h2><p className="text-[11px] text-[#77839d]">{notes.length} saved insight{notes.length === 1 ? "" : "s"}</p></div></div>{onClose && <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded-xl text-[#8b96af] hover:bg-white/[.06] hover:text-white" aria-label="Close notes"><X size={19} /></button>}</div>
-
-      <form onSubmit={addNote} className="border-b border-white/10 p-4"><label htmlFor="manual-note" className="mb-2 block text-xs font-bold uppercase tracking-wider text-[#78839d]">Quick note</label><div className="flex gap-2"><input id="manual-note" value={draft} maxLength={300} onChange={(event) => setDraft(event.target.value)} placeholder="Write a reminder…" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#050816] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#58647e] focus:border-[#53e0ff]/50" /><button type="submit" disabled={!draft.trim()} className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#0891b2] text-white disabled:cursor-not-allowed disabled:opacity-40" aria-label="Add note"><Plus size={18} /></button></div></form>
-
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {notes.length === 0 ? <div className="grid min-h-52 place-items-center rounded-2xl border border-dashed border-white/10 px-5 text-center"><div><Pin className="mx-auto text-[#58647e]" size={24} /><p className="mt-3 text-sm font-bold text-[#a7b0c5]">Important ideas live here</p><p className="mt-1 text-xs leading-5 text-[#6f7b95]">Pin any advisor paragraph or add your own reminder.</p></div></div> : <div className="grid gap-3">{notes.map((note) => <article key={note.id} className="group rounded-2xl border border-white/10 bg-white/[.035] p-3.5 hover:border-[#53e0ff]/20">{editingId === note.id ? <><textarea autoFocus value={editingText} onChange={(event) => setEditingText(event.target.value)} rows={4} maxLength={500} className="w-full resize-none rounded-xl border border-[#53e0ff]/30 bg-[#050816] p-3 text-sm text-white outline-none" /><div className="mt-2 flex justify-end gap-2"><button type="button" onClick={() => setEditingId(null)} className="grid size-9 place-items-center rounded-lg text-[#8994ad] hover:bg-white/[.06]" aria-label="Cancel editing"><X size={15} /></button><button type="button" onClick={() => save(note)} className="grid size-9 place-items-center rounded-lg bg-[#35d49a]/12 text-[#55e4b3]" aria-label="Save note"><Check size={16} /></button></div></> : <><p className="text-sm leading-6 text-[#c0c7d8]" onDoubleClick={() => { setEditingId(note.id); setEditingText(note.text); }}>{note.text}</p><div className="mt-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-[#59657e]">{note.sourceMessageId ? "From advisor" : "Personal note"}</span><div className="flex gap-1"><button type="button" onClick={() => copy(note)} className="grid size-8 place-items-center rounded-lg text-[#71809b] hover:bg-white/[.06] hover:text-[#53e0ff]" aria-label="Copy note">{copiedId === note.id ? <Check size={14} /> : <Clipboard size={14} />}</button><button type="button" onClick={() => { setEditingId(note.id); setEditingText(note.text); }} className="grid size-8 place-items-center rounded-lg text-[#71809b] hover:bg-white/[.06] hover:text-white" aria-label="Edit note"><NotebookPen size={14} /></button><button type="button" onClick={() => onRemove(note.id)} className="grid size-8 place-items-center rounded-lg text-[#71809b] hover:bg-red-400/10 hover:text-red-300" aria-label="Remove note"><Trash2 size={14} /></button></div></div></>}</article>)}</div>}
+    <aside
+      className="adv-notes"
+      aria-label={
+        locale === "bn" ? "পিন করা ব্যবসার নোট" : "Pinned business notes"
+      }
+    >
+      <div className="adv-notes-head">
+        <div className="adv-notes-heading">
+          <span className="adv-notes-icon">
+            <NotebookPen size={20} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="adv-notes-title">{t.pinned}</h2>
+            <p className="adv-notes-count">{notes.length} / 60</p>
+          </div>
+        </div>
+        {onClose && (
+          <button
+            autoFocus
+            type="button"
+            onClick={onClose}
+            className="mk-icon-button adv-notes-close"
+            aria-label={t.close}
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+      <form onSubmit={addNote} className="adv-note-form">
+        <label htmlFor={id} className="mk-label">
+          {t.quickNote}
+        </label>
+        <div className="adv-note-form-row">
+          <input
+            id={id}
+            value={draft}
+            maxLength={500}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={
+              locale === "bn"
+                ? "নিজের করণীয় লিখুন…"
+                : "Write your own action or reminder…"
+            }
+            className="adv-note-input"
+          />
+          <button
+            type="submit"
+            disabled={!draft.trim()}
+            className="mk-icon-button adv-note-add"
+            aria-label={t.addNote}
+          >
+            <Plus size={20} aria-hidden="true" />
+          </button>
+        </div>
+      </form>
+      {copyError && (
+        <p role="alert" className="adv-storage-notice">
+          {copyError}
+        </p>
+      )}
+      <div className="adv-notes-list-wrap">
+        {!notes.length ? (
+          <div className="adv-notes-empty">
+            <Pin size={28} aria-hidden="true" />
+            <p className="mk-slab adv-notes-empty-title">{t.noNotes}</p>
+            <p className="adv-notes-empty-text">{t.notesHelp}</p>
+          </div>
+        ) : (
+          <div className="adv-notes-list">
+            {notes.map((note) => (
+              <article key={note.id} className="adv-note">
+                {editingId === note.id ? (
+                  <>
+                    <textarea
+                      autoFocus
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      rows={4}
+                      maxLength={500}
+                      className="adv-note-edit"
+                      aria-label={t.editNote}
+                    />
+                    <div className="adv-note-edit-actions">
+                      <button
+                        type="button"
+                        className="mk-button-secondary adv-note-btn"
+                        onClick={() => setEditingId(null)}
+                      >
+                        {t.cancel}
+                      </button>
+                      <button
+                        type="button"
+                        className="mk-button-secondary adv-note-btn"
+                        disabled={!editingText.trim()}
+                        onClick={() => {
+                          onUpdate(note.id, editingText);
+                          setEditingId(null);
+                        }}
+                      >
+                        {t.saveNote}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="adv-note-text">{note.text}</p>
+                    <div className="adv-note-foot">
+                      <span className="mk-label">
+                        {!note.conversationId
+                          ? locale === "bn"
+                            ? "আগের নোট"
+                            : "Earlier saved note"
+                          : note.kind === "step"
+                            ? locale === "bn"
+                              ? "রোডম্যাপের ধাপ"
+                              : "Roadmap step"
+                            : note.sourceMessageId
+                              ? locale === "bn"
+                                ? "নির্বাচিত লেখা"
+                                : "Selected text"
+                              : locale === "bn"
+                                ? "নিজের নোট"
+                                : "Personal note"}
+                      </span>
+                      <div className="adv-note-actions">
+                        <button
+                          type="button"
+                          onClick={() => void copy(note)}
+                          className="adv-note-action"
+                          aria-label={
+                            copiedId === note.id
+                              ? locale === "bn"
+                                ? "কপি হয়েছে"
+                                : "Copied"
+                              : t.copyNote
+                          }
+                        >
+                          {copiedId === note.id ? (
+                            <Check size={16} aria-hidden="true" />
+                          ) : (
+                            <Clipboard size={16} aria-hidden="true" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          className="adv-note-action"
+                          aria-label={t.editNote}
+                          onClick={() => {
+                            setEditingId(note.id);
+                            setEditingText(note.text);
+                          }}
+                        >
+                          <NotebookPen size={18} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="adv-note-action"
+                          aria-label={t.removeNote}
+                          onClick={() => onRemove(note.id)}
+                        >
+                          <Trash2 size={18} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
       </div>
     </aside>
   );

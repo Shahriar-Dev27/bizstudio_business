@@ -1,0 +1,1492 @@
+/*
+ * BizGuide AI - Paper Arcade homepage sections.
+ * Tokens, focus ring, and shared primitives (buttons, labels, panels, wordmark, sr-only) live in
+ * app/paper-arcade.css, which the root layout loads before this file. Everything here is homepage-only.
+ */
+
+
+
+
+
+/* <main> is a programmatic focus target only (skip link): it takes focus but is not a control. */
+.marketing-page .mk-main:focus,
+.marketing-page .mk-main:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+
+/* ---------- Header ---------- */
+
+.mk-skip-link {
+  position: absolute;
+  left: 16px;
+  top: -80px;
+  z-index: 100;
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  background: var(--mk-ink);
+  color: var(--mk-paper);
+  padding: 0 16px;
+  font-family: var(--mk-font-mono);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.mk-skip-link:focus {
+  top: 16px;
+}
+
+.mk-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: var(--mk-border);
+  background: var(--mk-paper);
+}
+
+.mk-header-bar {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.mk-header-nav {
+  display: none;
+  align-items: center;
+  gap: 32px;
+}
+
+.mk-header-action {
+  display: none;
+}
+
+.mk-header .mk-button {
+  padding: 0 16px;
+  --mk-shadow: var(--mk-shadow-compact);
+}
+
+@media (hover: hover) {
+  .mk-header .mk-button:hover {
+    --mk-shadow: 6px 6px 0 var(--mk-ink);
+  }
+}
+
+.mk-header .mk-button:active {
+  --mk-shadow: 1px 1px 0 var(--mk-ink);
+}
+
+.mk-header-toggle {
+  display: inline-grid;
+}
+
+.mk-mobile-nav {
+  border-top: var(--mk-border);
+}
+
+.mk-mobile-nav-list {
+  display: grid;
+  gap: 4px;
+  padding-block: 16px 24px;
+}
+
+.mk-mobile-nav .mk-nav-link {
+  justify-content: flex-start;
+  min-height: 48px;
+  border-bottom: 2px solid var(--mk-ink);
+}
+
+.mk-mobile-nav .mk-button {
+  margin-top: 16px;
+}
+
+@media (min-width: 900px) {
+  .mk-header-nav {
+    display: flex;
+  }
+
+  .mk-header-action {
+    display: block;
+  }
+
+  .mk-header-toggle,
+  .mk-mobile-nav {
+    display: none;
+  }
+}
+
+
+/* ---------- Hero ---------- */
+
+.mk-hero {
+  border-bottom: var(--mk-border);
+  padding-block: clamp(40px, 6vw, 80px) clamp(56px, 7vw, 96px);
+}
+
+.mk-hero-grid {
+  display: grid;
+  gap: 48px;
+  margin-top: clamp(24px, 3vw, 40px);
+}
+
+.mk-hero-copy {
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+
+.mk-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.mk-hero-hints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.mk-hero-hints .mk-chip {
+  min-height: 48px;
+  cursor: pointer;
+  transition: background-color var(--mk-t-control) var(--mk-ease);
+}
+
+@media (hover: hover) {
+  .mk-hero-hints .mk-chip:hover {
+    background: var(--mk-yellow);
+  }
+}
+
+.mk-preview {
+  position: relative;
+  align-self: start;
+}
+
+.mk-preview-card {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.mk-preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mk-bubble {
+  max-width: 100%;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 12px 16px;
+}
+
+.mk-preview-bar .mk-label {
+  margin: 0;
+}
+
+.mk-bubble-lead {
+  margin: 0;
+  font-weight: 500;
+}
+
+.mk-bubble--user {
+  justify-self: end;
+  max-width: 92%;
+  font-weight: 500;
+}
+
+.mk-bubble-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.mk-bubble-list li + li {
+  margin-top: 4px;
+}
+
+@media (min-width: 1024px) {
+  .mk-hero-grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 64px;
+    align-items: start;
+  }
+
+  .mk-preview::before {
+    content: "";
+    position: absolute;
+    inset: 20px -16px -16px 20px;
+    border: var(--mk-border);
+    border-radius: var(--mk-radius);
+    background: var(--mk-yellow);
+  }
+}
+
+/* ---------- Shared section pieces ---------- */
+
+
+/* Header is sticky and 72px tall: keep in-page anchors clear of it. */
+.mk-anchor {
+  scroll-margin-top: 88px;
+}
+
+.mk-section-head {
+  display: grid;
+  gap: 20px;
+  justify-items: start;
+  margin-bottom: clamp(32px, 5vw, 64px);
+}
+
+.mk-section-head .mk-lead {
+  max-width: 56ch;
+}
+
+.mk-text-link {
+  color: var(--mk-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.mk-text-link:hover {
+  background: var(--mk-yellow);
+}
+
+/* ---------- Capabilities ---------- */
+
+.mk-cap-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 700px) {
+  .mk-cap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .mk-cap-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 32px;
+  }
+}
+
+.mk-cap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.mk-cap--sage {
+  background: var(--mk-sage);
+}
+
+.mk-cap--yellow {
+  background: var(--mk-yellow);
+}
+
+.mk-cap .mk-h3,
+.mk-cap p {
+  margin: 0;
+}
+
+.mk-cap-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mk-cap-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+}
+
+.mk-cap--paper .mk-cap-icon {
+  background: var(--mk-yellow);
+}
+
+.mk-cap-question {
+  font-family: var(--mk-font-slab);
+  font-size: 1.375rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.mk-cap-question .mk-label,
+.mk-cap-output .mk-label {
+  display: block;
+  font-style: normal;
+}
+
+.mk-cap .mk-cap-output {
+  margin-top: auto;
+  border-top: var(--mk-border);
+  padding-top: 12px;
+  font-weight: 500;
+}
+
+.mk-boundary {
+  margin: 32px 0 0;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-yellow);
+  padding: 16px 20px;
+  font-weight: 500;
+}
+
+/* ---------- How it works: copy column ---------- */
+
+.mk-process {
+  border-block: var(--mk-border);
+}
+
+.mk-sample-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.mk-sample-label .mk-label {
+  margin: 0;
+}
+
+.mk-stepnav ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-stepnav-link {
+  --mk-shadow: var(--mk-shadow-compact);
+  display: inline-grid;
+  min-width: 48px;
+  min-height: 48px;
+  place-items: center;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+  text-decoration: none;
+  box-shadow: var(--mk-shadow);
+  transition:
+    transform var(--mk-t-control) var(--mk-ease),
+    box-shadow var(--mk-t-control) var(--mk-ease),
+    background-color var(--mk-t-control) var(--mk-ease);
+}
+
+@media (hover: hover) {
+  .mk-stepnav-link:hover {
+    transform: translate(-2px, -2px);
+    --mk-shadow: 6px 6px 0 var(--mk-ink);
+    background: var(--mk-yellow);
+  }
+}
+
+.mk-stepnav-link:active {
+  transform: translate(4px, 4px);
+  --mk-shadow: 1px 1px 0 var(--mk-ink);
+}
+
+.mk-process-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 48px;
+}
+
+/* The decorative diagram needs room; below 1024px the connected stage list carries the story. */
+.mk-process-visual {
+  display: none;
+  container-type: inline-size;
+}
+
+.mk-stages {
+  position: relative;
+  display: grid;
+  gap: 40px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-stages::before {
+  content: "";
+  position: absolute;
+  top: 22px;
+  bottom: 22px;
+  left: 21px;
+  width: 2px;
+  background: var(--mk-ink);
+}
+
+.mk-stage {
+  position: relative;
+  padding-left: 68px;
+}
+
+.mk-stage-head {
+  display: grid;
+  gap: 4px;
+}
+
+.mk-stage-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  box-shadow: var(--mk-shadow-compact);
+}
+
+.mk-stage-count {
+  margin: 0;
+}
+
+/* Progress state is only shown (colour AND text) while the scroll walkthrough is running; see the
+   sticky block below. In normal-flow modes the list is a plain numbered sequence. */
+.mk-stage-state {
+  display: none;
+}
+
+.mk-stage-title {
+  margin: 0;
+}
+
+.mk-stage-text {
+  margin: 12px 0 0;
+}
+
+.mk-sample {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.mk-sample-tag {
+  margin: 0;
+}
+
+.mk-sample-bubble {
+  justify-self: start;
+  max-width: 100%;
+  margin: 0;
+}
+
+.mk-sample-list,
+.mk-plan-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-sample-list li,
+.mk-plan-list li {
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 10px 14px;
+  font-weight: 500;
+}
+
+.mk-plan-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.mk-chip--tag {
+  flex: none;
+  background: var(--mk-yellow);
+  letter-spacing: 0;
+}
+
+.mk-sample-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.mk-lens-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+}
+
+.mk-lens-list li {
+  padding: 10px 14px;
+}
+
+.mk-lens-list li + li {
+  border-top: var(--mk-border);
+}
+
+.mk-lens-list strong {
+  display: block;
+}
+
+.mk-legend {
+  margin: 0;
+}
+
+.mk-sample-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.mk-sample-note p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.mk-finale {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  margin-top: 48px;
+  padding: 24px;
+}
+
+.mk-finale .mk-h3,
+.mk-finale .mk-body {
+  margin: 0;
+}
+
+.mk-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-flow li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: var(--mk-border);
+  background: var(--mk-paper);
+  padding: 4px 10px;
+  font-family: var(--mk-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mk-flow li:not(:last-child)::after {
+  content: "→";
+  content: "→" / "";
+}
+
+.mk-finale .mk-button,
+.mk-closing-panel .mk-button,
+.mk-footer .mk-button {
+  padding-block: 8px;
+  text-align: center;
+  white-space: normal;
+}
+
+@media (max-width: 639px) {
+  .mk-stage {
+    padding-left: 60px;
+  }
+}
+
+/* Sticky diagram layout: wide AND tall viewports with motion allowed. Native scrolling only.
+   Measured diagram heights: ~590px from 1200px wide, up to ~680px at 1024px wide. With the 80px
+   sticky offset and the 6px hard shadow it fits a 720px-tall viewport from 1200px wide; the
+   narrower 1024-1199px band needs 768px so the diagram is never clipped. */
+@media (min-width: 1024px) {
+  .mk-process-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: start;
+  }
+
+  .mk-process-visual {
+    display: block;
+    align-self: start;
+  }
+}
+
+/* The condition below must be LITERALLY identical to PROCESS_MOTION_QUERY in
+   components/marketing/use-process-motion.ts (the hook enables scroll-driven motion under exactly
+   it; the source of truth lives there). Edit both together. */
+@media (width >= 1200px) and (height >= 720px) and (prefers-reduced-motion: no-preference),
+  (width >= 1024px) and (width < 1200px) and (height >= 768px) and (prefers-reduced-motion: no-preference) {
+  .mk-process-visual {
+    position: sticky;
+    top: 80px;
+  }
+
+  .mk-stage {
+    min-height: 75vh;
+  }
+
+  /* data-motion="live" is set by the hook only while ScrollTrigger is tracking the stages. */
+  .mk-process[data-motion="live"] .mk-stage[data-state="complete"] .mk-stage-badge {
+    background: var(--mk-sage);
+  }
+
+  .mk-process[data-motion="live"] .mk-stage[data-state="active"] .mk-stage-badge {
+    background: var(--mk-orange);
+    color: var(--mk-on-orange);
+  }
+
+  .mk-process[data-motion="live"] .mk-stage-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    border: var(--mk-border);
+    background: var(--mk-paper);
+    padding: 0 6px;
+    vertical-align: baseline;
+  }
+
+  .mk-process[data-motion="live"] .mk-stage[data-state="complete"] .mk-stage-state {
+    background: var(--mk-sage);
+  }
+
+  .mk-process[data-motion="live"] .mk-stage[data-state="active"] .mk-stage-state {
+    background: var(--mk-orange);
+    color: var(--mk-on-orange);
+  }
+}
+
+/* ---------- How it works: diagram ---------- */
+
+.mk-diagram {
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 12px 14px 14px;
+  box-shadow: var(--mk-shadow-standard);
+}
+
+.mk-diagram-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+}
+
+.mk-diagram-bar .mk-label {
+  margin: 0;
+}
+
+.mk-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr);
+  grid-template-rows: auto 18px auto 18px auto 28px;
+  grid-template-areas:
+    "idea c1 context"
+    ". . vc1"
+    "hub hub hub"
+    "vc2 . ."
+    "plan c3 notes"
+    "loopc loopb loopa";
+}
+
+.mk-node {
+  position: relative;
+  z-index: 1;
+  container-type: inline-size;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 8px 12px;
+  color: var(--mk-ink);
+  font-size: clamp(12px, 1.95cqw, 14px);
+  line-height: 1.4;
+  box-shadow: var(--mk-shadow-compact);
+}
+
+.mk-node[data-state="complete"] {
+  background: var(--mk-sage);
+}
+
+.mk-node[data-state="active"] {
+  background: var(--mk-orange);
+  color: var(--mk-on-orange);
+}
+
+.mk-node p {
+  margin: 0;
+}
+
+.mk-node-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mk-node-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.mk-node-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: var(--mk-border);
+  background: var(--mk-paper);
+  padding: 0 6px;
+  color: var(--mk-ink);
+}
+
+.mk-node-quote,
+.mk-node-questions li,
+.mk-node-plan li,
+.mk-lens-chip {
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+  font-weight: 500;
+}
+
+.mk-node-quote {
+  padding: 6px 10px;
+}
+
+.mk-node-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mk-node-questions,
+.mk-node-plan {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-node-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mk-node-questions li {
+  padding: 0 8px;
+}
+
+.mk-node-plan {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.mk-node-plan li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 3px 6px 4px;
+}
+
+.mk-node-plan .mk-chip {
+  padding-block: 0;
+}
+
+.mk-lenses {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@container (min-width: 500px) {
+  .mk-lenses {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.mk-lens {
+  display: grid;
+  justify-items: center;
+}
+
+.mk-stub {
+  display: block;
+  width: 12px;
+  height: 8px;
+}
+
+.mk-lens-chip {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px;
+  font-family: var(--mk-font-mono);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+@container (min-width: 500px) {
+  .mk-lens-chip {
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.mk-node-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-yellow);
+  padding: 6px 10px;
+  color: var(--mk-ink);
+  font-weight: 500;
+}
+
+.mk-node-note svg {
+  flex: none;
+  margin-top: 3px;
+}
+
+.mk-node-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  color: inherit;
+  font-family: var(--mk-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.mk-conn {
+  position: relative;
+  z-index: 0;
+}
+
+.mk-conn svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.mk-board svg path {
+  fill: none;
+  stroke: var(--mk-ink);
+  stroke-width: 2;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+}
+
+.mk-conn--right::after,
+.mk-conn--down::after,
+.mk-conn--up::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 0;
+  /* Fully visible by default; the hook animates --mk-arrow while scrubbing the connector. */
+  opacity: var(--mk-arrow, 1);
+}
+
+.mk-conn--right::after {
+  top: 50%;
+  right: -1px;
+  transform: translateY(-50%);
+  border-block: 6px solid transparent;
+  border-left: 9px solid var(--mk-ink);
+}
+
+.mk-conn--down::after {
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-inline: 6px solid transparent;
+  border-top: 9px solid var(--mk-ink);
+}
+
+.mk-conn--up::after {
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-inline: 6px solid transparent;
+  border-bottom: 9px solid var(--mk-ink);
+}
+
+.mk-loop-label {
+  z-index: 2;
+  grid-row: 6;
+  grid-column: 1 / -1;
+  place-self: center;
+  margin: 0;
+  background: var(--mk-paper);
+  padding: 0 8px;
+}
+
+/* ---------- Business examples ---------- */
+
+.mk-examples-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+}
+
+@media (min-width: 900px) {
+  .mk-examples-grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 48px;
+    align-items: start;
+  }
+}
+
+.mk-examples-pick {
+  display: grid;
+  gap: 16px;
+}
+
+.mk-examples-pick p {
+  margin: 0;
+}
+
+.mk-examples-list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-example-choice {
+  --mk-shadow: var(--mk-shadow-compact);
+  display: flex;
+  width: 100%;
+  min-height: 64px;
+  align-items: center;
+  gap: 14px;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 10px 14px;
+  color: var(--mk-ink);
+  font: inherit;
+  text-align: left;
+  box-shadow: var(--mk-shadow);
+  cursor: pointer;
+  transition:
+    transform var(--mk-t-control) var(--mk-ease),
+    box-shadow var(--mk-t-control) var(--mk-ease),
+    background-color var(--mk-t-control) var(--mk-ease);
+  touch-action: manipulation;
+}
+
+@media (hover: hover) {
+  .mk-example-choice[aria-pressed="false"]:hover:not(:active) {
+    transform: translate(-2px, -2px);
+    --mk-shadow: 6px 6px 0 var(--mk-ink);
+    background: var(--mk-yellow);
+  }
+}
+
+.mk-example-choice:active {
+  transform: translate(4px, 4px);
+  background: var(--mk-yellow);
+  --mk-shadow: 1px 1px 0 var(--mk-ink);
+}
+
+/* Selected: pressed in, yellow, a checked box and a "Selected" tag; never colour alone. */
+.mk-example-choice[aria-pressed="true"] {
+  transform: translate(4px, 4px);
+  --mk-shadow: 1px 1px 0 var(--mk-ink);
+  background: var(--mk-yellow);
+}
+
+.mk-example-mark {
+  display: grid;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+}
+
+.mk-example-choice[aria-pressed="true"] .mk-example-mark {
+  background: var(--mk-ink);
+  color: var(--mk-paper);
+}
+
+.mk-example-text {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+
+.mk-example-name {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.mk-example-selected {
+  flex: none;
+  border: var(--mk-border);
+  background: var(--mk-paper);
+  padding: 0 6px;
+}
+
+.mk-examples-note {
+  max-width: 40ch;
+  font-weight: 500;
+}
+
+.mk-examples-editor {
+  display: grid;
+  gap: 24px;
+  padding: clamp(16px, 3vw, 28px);
+}
+
+.mk-examples-field {
+  display: grid;
+  gap: 8px;
+}
+
+.mk-examples-field p {
+  margin: 0;
+}
+
+.mk-textarea {
+  display: block;
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 12px 14px;
+  color: var(--mk-ink);
+  font-family: var(--mk-font-sans);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mk-examples-action {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.mk-examples-helper {
+  margin: 0;
+  font-weight: 500;
+}
+
+.mk-examples-go {
+  max-width: 100%;
+  padding-block: 8px;
+  text-align: center;
+  white-space: normal;
+}
+
+/* aria-disabled stays focusable so the reason can be read; it must not look or move like a live control. */
+.mk-examples-go[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (hover: hover) {
+  .mk-examples-go[aria-disabled="true"]:hover {
+    transform: none;
+    --mk-shadow: 5px 5px 0 var(--mk-ink);
+  }
+}
+
+.mk-examples-go[aria-disabled="true"]:active {
+  transform: none;
+  --mk-shadow: 5px 5px 0 var(--mk-ink);
+}
+
+.mk-examples-topics {
+  display: grid;
+  gap: 12px;
+}
+
+.mk-examples-topics .mk-label {
+  margin: 0;
+}
+
+.mk-examples-topic-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-examples-topic-list li {
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 10px 14px;
+  font-weight: 500;
+}
+
+/* ---------- Notes ---------- */
+
+.mk-notes-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 48px;
+}
+
+@media (min-width: 1024px) {
+  .mk-notes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 64px;
+  }
+}
+
+.mk-notes-copy {
+  display: grid;
+  justify-items: start;
+  gap: 20px;
+}
+
+.mk-checklist {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+}
+
+.mk-checklist-mark {
+  display: grid;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-sage);
+}
+
+.mk-callout {
+  display: grid;
+  gap: 8px;
+  padding: 16px 20px;
+}
+
+.mk-callout p,
+.mk-callout h3 {
+  margin: 0;
+}
+
+.mk-note-board {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+
+.mk-note-board p {
+  margin: 0;
+}
+
+.mk-note-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mk-note-board-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mk-note-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  padding: 14px 16px;
+  box-shadow: var(--mk-shadow-compact);
+}
+
+.mk-note-card svg {
+  flex: none;
+  margin-top: 4px;
+}
+
+.mk-note-card p:first-child {
+  font-weight: 500;
+}
+
+/* ---------- FAQ ---------- */
+
+.mk-faq-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+}
+
+@media (min-width: 1024px) {
+  .mk-faq-grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 64px;
+  }
+}
+
+.mk-faq-head {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 20px;
+}
+
+.mk-faq-list {
+  display: grid;
+  gap: 16px;
+}
+
+.mk-faq {
+  --mk-shadow: var(--mk-shadow-compact);
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+  box-shadow: var(--mk-shadow);
+}
+
+.mk-faq[open] {
+  background: var(--mk-sage);
+}
+
+.mk-faq summary {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.35;
+  list-style: none;
+  cursor: pointer;
+}
+
+.mk-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.marketing-page .mk-faq summary:focus-visible {
+  outline-offset: -6px;
+  box-shadow: none;
+}
+
+.mk-faq-icon {
+  display: grid;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: var(--mk-border);
+  border-radius: var(--mk-radius);
+  background: var(--mk-paper);
+}
+
+.mk-faq-minus,
+.mk-faq[open] .mk-faq-plus {
+  display: none;
+}
+
+.mk-faq[open] .mk-faq-minus {
+  display: block;
+}
+
+.mk-faq-answer {
+  display: grid;
+  gap: 12px;
+  max-width: 62ch;
+  padding: 0 16px 16px;
+}
+
+.mk-faq-answer p {
+  margin: 0;
+}
+
+/* ---------- Closing action and footer ---------- */
+
+.mk-closing {
+  padding-top: 0;
+}
+
+.mk-closing-panel {
+  display: grid;
+  justify-items: start;
+  gap: 20px;
+  padding: clamp(24px, 5vw, 64px);
+}
+
+.mk-closing-panel .mk-h2,
+.mk-closing-panel .mk-lead {
+  margin: 0;
+}
+
+.mk-footer {
+  border-top: var(--mk-border);
+  background: var(--mk-ink);
+  padding-block: 48px;
+  color: var(--mk-paper);
+}
+
+.mk-footer-grid {
+  display: grid;
+  gap: 24px;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .mk-footer-grid {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 32px;
+  }
+
+  .mk-footer-copy {
+    grid-column: 1 / -1;
+  }
+}
+
+.mk-footer .mk-wordmark {
+  color: var(--mk-paper);
+}
+
+.mk-footer .mk-wordmark-ai {
+  border-color: var(--mk-paper);
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+}
+
+.mk-footer-note,
+.mk-footer-copy {
+  margin: 0;
+}
+
+.mk-footer-note {
+  max-width: 62ch;
+}
+
+.mk-footer-copy {
+  font-family: var(--mk-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Ink surface: paper-coloured shadow and focus ring so both stay visible. */
+.mk-footer .mk-button {
+  --mk-shadow: 5px 5px 0 var(--mk-paper);
+}
+
+@media (hover: hover) {
+  .mk-footer .mk-button:hover {
+    --mk-shadow: 7px 7px 0 var(--mk-paper);
+  }
+}
+
+.mk-footer .mk-button:active {
+  --mk-shadow: 1px 1px 0 var(--mk-paper);
+}
+
+.marketing-page .mk-footer :focus-visible {
+  outline-color: var(--mk-paper);
+  box-shadow: 0 0 0 3px var(--mk-ink), var(--mk-shadow, 0 0 0 0 transparent);
+}
+
+/* ---------- Motion preferences ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-page *,
+  .marketing-page *::before,
+  .marketing-page *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
