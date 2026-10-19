@@ -156,7 +156,39 @@ export function AdvisorExperience() {
   const showPrefill = initialIdea.length > 0 && draft === initialIdea && messages.length === 1;
   // OQ1 (UI-only): send focus back to the Notes button when the drawer closes.
   const notesToggleRef = useRef<HTMLButtonElement>(null);
-  function closeNotes() { setNotesOpen(false); notesToggleRef.current?.focus(); }
+  const notesDialogRef = useRef<HTMLDivElement>(null);
+  function closeNotes() { setNotesOpen(false); }
+
+  // Keep modal focus contained even when editing/removing a note unmounts a control.
+  useEffect(() => {
+    if (!notesOpen) return;
+    const dialog = notesDialogRef.current;
+    if (!dialog) return;
+    const toggle = notesToggleRef.current;
+    const focusInside = () => {
+      if (!dialog.contains(document.activeElement)) {
+        dialog.querySelector<HTMLButtonElement>('button[aria-label="Close notes"]')?.focus();
+      }
+    };
+    const observer = new MutationObserver(focusInside);
+    observer.observe(dialog, { childList: true, subtree: true });
+    document.addEventListener("focusin", focusInside);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("focusin", focusInside);
+      toggle?.focus();
+    };
+  }, [notesOpen]);
+
+  function handleNotesKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") { event.preventDefault(); closeNotes(); return; }
+    if (event.key !== "Tab") return;
+    const controls = event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), input:not(:disabled), textarea:not(:disabled), a[href]');
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }
   return (
     <div className="adv-shell">
       <header className="adv-header">
@@ -205,7 +237,7 @@ export function AdvisorExperience() {
         <div className="adv-sidebar"><PinnedNotes notes={pins} onAdd={(text) => addPin(text)} onUpdate={updatePin} onRemove={removePin} /></div>
       </div>
 
-      {notesOpen && <div className="adv-drawer" role="dialog" aria-modal="true" aria-label="Pinned notes" onKeyDown={(event) => { if (event.key === "Escape") closeNotes(); }}><button type="button" className="adv-drawer-scrim" onClick={closeNotes} aria-label="Close notes overlay" tabIndex={-1} /><div className="adv-drawer-panel"><PinnedNotes notes={pins} onAdd={(text) => addPin(text)} onUpdate={updatePin} onRemove={removePin} onClose={closeNotes} /></div></div>}
+      {notesOpen && <div ref={notesDialogRef} className="adv-drawer" role="dialog" aria-modal="true" aria-label="Pinned notes" onKeyDown={handleNotesKeyDown}><button type="button" className="adv-drawer-scrim" onClick={closeNotes} aria-label="Close notes overlay" tabIndex={-1} /><div className="adv-drawer-panel"><PinnedNotes notes={pins} onAdd={(text) => addPin(text)} onUpdate={updatePin} onRemove={removePin} onClose={closeNotes} /></div></div>}
       {pinNotice && <div className="adv-toast" role="status"><Check size={16} strokeWidth={2.5} aria-hidden="true" />{pinNotice}</div>}
     </div>
   );
