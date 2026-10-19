@@ -85,7 +85,7 @@ it("shows typing instead of unfinished answer text and reveals the completed ans
     />,
   );
   expect(screen.queryByText("Unfinished secret answer")).toBeNull();
-  expect(screen.getByText(/AI is typing/)).toBeTruthy();
+  expect(screen.getByRole("status").textContent).toContain("AI is typing");
   view.rerender(
     <AdvisorMessageCard
       message={{ ...message, content: "Finished answer" }}
@@ -94,6 +94,7 @@ it("shows typing instead of unfinished answer text and reveals the completed ans
     />,
   );
   expect(screen.getByText("Finished answer")).toBeTruthy();
+  expect(screen.queryByRole("status")).toBeNull();
 });
 it("does not enable script links or execute raw HTML", () => {
   render(

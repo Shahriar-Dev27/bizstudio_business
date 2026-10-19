@@ -102,7 +102,7 @@ test("keeps navigation and notes visible with common advertising filters", async
 });
 test("shows thinking while waiting, then reveals the completed streamed result", async ({
   page,
-}) => {
+}, info) => {
   let finish!: () => void;
   const waiting = new Promise<void>((resolve) => {
     finish = resolve;
@@ -125,10 +125,34 @@ test("shows thinking while waiting, then reveals the completed streamed result",
   await expect(
     page.getByText("A precise completed recommendation.", { exact: true }),
   ).toHaveCount(0);
+  const loader = page.locator(".adv-preparing");
+  await expect(loader.getByRole("status")).toContainText("AI is thinking");
+  const activity = loader.locator(".adv-thinking-track i");
+  const initialTransform = await activity.evaluate(
+    (el) => getComputedStyle(el).transform,
+  );
+  await expect
+    .poll(() => activity.evaluate((el) => getComputedStyle(el).transform))
+    .not.toBe(initialTransform);
+  await mkdir(".agency/chat-improvements/evidence", { recursive: true });
+  await loader.screenshot({
+    path: `.agency/chat-improvements/evidence/thinking-${info.project.name}.png`,
+    animations: "allow",
+  });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect
+    .poll(() => loader.evaluate((el) =>
+      el.getAnimations({ subtree: true })
+        .filter((animation) => animation.playState === "running").length,
+    ))
+    .toBe(0);
+  await expect(loader.getByRole("status")).toContainText("AI is thinking");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   finish();
   await expect(
     page.getByText("A precise completed recommendation.", { exact: true }),
   ).toBeVisible();
+  await expect(loader).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Stop response" })).toHaveCount(
     0,
   );

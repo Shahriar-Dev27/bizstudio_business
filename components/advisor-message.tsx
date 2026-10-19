@@ -2,7 +2,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Clipboard, Pin } from "lucide-react";
+import { Clipboard, Pin, Sparkles } from "lucide-react";
 import type { ChatMessage } from "@/types/advisor";
 import type { Locale } from "@/types/chat";
 import { extractRoadmap } from "@/lib/chat/roadmap";
@@ -147,16 +147,36 @@ function MessageCard({
         )}
       </div>
       {waiting ? (
-        <div className="adv-preparing">
+        <div className="adv-preparing" data-phase={phase}>
           <div className="adv-thinking">
-            <span className="adv-thinking-dots" aria-hidden="true">
-              <i />
-              <i />
-              <i />
+            <span className="adv-thinking-orbit" aria-hidden="true">
+              <Sparkles size={22} strokeWidth={1.7} />
             </span>
-            <span>{phase === "typing" ? t.typing : t.thinking}</span>
+            <div
+              className="adv-thinking-copy"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <div className="adv-thinking-title">
+                <span>{phase === "typing" ? t.typing : t.thinking}</span>
+                <span className="adv-thinking-dots" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </div>
+              <p>{phase === "typing" ? t.working : t.preparing}</p>
+            </div>
           </div>
-          <p>{phase === "typing" ? t.working : t.preparing}</p>
+          <div className="adv-thinking-track" aria-hidden="true">
+            <i />
+          </div>
+          <div className="adv-thinking-preview" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </div>
         </div>
       ) : (
         <>
