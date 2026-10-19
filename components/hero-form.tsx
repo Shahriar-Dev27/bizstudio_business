@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { FormEvent, useState } from "react";
+import { encodeIdea } from "@/lib/encode-idea";
 
 const examples = ["Coffee shop in Sylhet", "Online boutique in Dhaka", "Agro supply store in Rajshahi"];
 
@@ -16,7 +17,7 @@ export function HeroForm({ appearance = "default" }: { appearance?: "default" | 
     event.preventDefault();
     const value = idea.trim();
     if (value.length < 4) { setError("Tell us a little more about your business idea."); return; }
-    router.push(`/advisor?idea=${encodeURIComponent(value)}`);
+    router.push(`/advisor?idea=${encodeIdea(value)}`);
   }
 
   if (marketing) {

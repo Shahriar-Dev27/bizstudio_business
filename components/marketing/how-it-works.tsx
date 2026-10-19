@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Pin } from "lucide-react";
+import { HashLink } from "./hash-link";
 import { ProcessDiagram } from "./process-diagram";
 import {
   CONTEXT_CHIPS,
@@ -121,10 +122,10 @@ export function HowItWorks(): React.JSX.Element {
             <ol>
               {PROCESS_STAGES.map((stage) => (
                 <li key={stage.id}>
-                  <a href={`#${stage.id}`} className="mk-stepnav-link">
+                  <HashLink hash={stage.id} className="mk-stepnav-link">
                     <span className="mk-number">{stage.number}</span>
                     <span className="mk-sr-only"> {stage.title}</span>
-                  </a>
+                  </HashLink>
                 </li>
               ))}
             </ol>

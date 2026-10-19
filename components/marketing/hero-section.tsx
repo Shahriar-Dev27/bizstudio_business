@@ -1,4 +1,5 @@
 import { HeroForm } from "@/components/hero-form";
+import { HashLink } from "./hash-link";
 
 export function HeroSection(): React.JSX.Element {
   return (
@@ -15,7 +16,7 @@ export function HeroSection(): React.JSX.Element {
             </p>
             <HeroForm appearance="marketing" />
             <div className="mk-hero-actions">
-              <a href="#how-it-works" className="mk-button-secondary">See how it works</a>
+              <HashLink hash="how-it-works" className="mk-button-secondary">See how it works</HashLink>
             </div>
           </div>
           <aside className="mk-preview" aria-label="Example conversation">

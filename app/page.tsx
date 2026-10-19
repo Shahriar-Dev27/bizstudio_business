@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { BusinessExamples } from "@/components/marketing/business-examples";
 import { CapabilitySection } from "@/components/marketing/capability-section";
 import { FaqSection } from "@/components/marketing/faq-section";
+import { HashLink } from "@/components/marketing/hash-link";
 import { HeroSection } from "@/components/marketing/hero-section";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { MarketingBrand } from "@/components/marketing/marketing-brand";
@@ -18,7 +19,7 @@ const josefinSlab = Josefin_Slab({ subsets: ["latin"], style: ["normal", "italic
 export default function HomePage() {
   return (
     <div className={`marketing-page ${spaceGrotesk.variable} ${plexMono.variable} ${josefinSlab.variable}`}>
-      <a href="#main" className="mk-skip-link">Skip to content</a>
+      <HashLink hash="main" className="mk-skip-link">Skip to content</HashLink>
       <SiteHeader />
       <main id="main">
         <HeroSection />
