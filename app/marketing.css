@@ -1074,10 +1074,11 @@
   }
 }
 
-/* KEEP IN SYNC with PROCESS_MOTION_QUERY in components/marketing/use-process-motion.ts: the hook
-   enables scroll-driven motion under exactly this condition. */
-@media (min-width: 1200px) and (min-height: 720px) and (prefers-reduced-motion: no-preference),
-  (min-width: 1024px) and (max-width: 1199px) and (min-height: 768px) and (prefers-reduced-motion: no-preference) {
+/* The condition below must be LITERALLY identical to PROCESS_MOTION_QUERY in
+   components/marketing/use-process-motion.ts (the hook enables scroll-driven motion under exactly
+   it; the source of truth lives there). Edit both together. */
+@media (width >= 1200px) and (height >= 720px) and (prefers-reduced-motion: no-preference),
+  (width >= 1024px) and (width < 1200px) and (height >= 768px) and (prefers-reduced-motion: no-preference) {
   .mk-process-visual {
     position: sticky;
     top: 80px;

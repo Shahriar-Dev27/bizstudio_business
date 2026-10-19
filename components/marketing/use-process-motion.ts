@@ -18,16 +18,31 @@ import { PROCESS_STAGES } from "./process-content";
  */
 
 /**
- * Must stay identical to the sticky layout media query in app/marketing.css (the block that sets
- * `.mk-process-visual { position: sticky }`), so JS and CSS always agree on the mode. It is the
- * spec's "width >= 1024 and height >= 720 with reduced motion off", except that the 1024-1199px
- * band needs 768px of height because the diagram is up to ~680px tall there (measured).
+ * SINGLE SOURCE OF TRUTH, mirrored literally in app/marketing.css: the `@media` condition above the
+ * `.mk-process-visual { position: sticky }` rule must be this exact string (whitespace aside).
+ * Edit both together. Range syntax with an exclusive upper bound leaves no gap or overlap at
+ * 1199/1200 (including fractional widths).
+ *
+ * It is the spec's "width >= 1024 and height >= 720 with reduced motion off", except that the
+ * 1024-1199px band needs 768px of height because the diagram is up to ~680px tall there (measured).
  */
 export const PROCESS_MOTION_QUERY =
-  "(min-width: 1200px) and (min-height: 720px) and (prefers-reduced-motion: no-preference), " +
-  "(min-width: 1024px) and (max-width: 1199px) and (min-height: 768px) and (prefers-reduced-motion: no-preference)";
+  "(width >= 1200px) and (height >= 720px) and (prefers-reduced-motion: no-preference), " +
+  "(width >= 1024px) and (width < 1200px) and (height >= 768px) and (prefers-reduced-motion: no-preference)";
 
 const LAST_STAGE = PROCESS_STAGES.length - 1;
+/** Scroll counts as settled after this many consecutive animation frames with an unchanged scrollY. */
+const SETTLE_FRAMES = 3;
+/** Same, while a #hash target exists that the browser has not scrolled to yet (smooth scroll may not have started). */
+const SETTLE_FRAMES_PENDING_ANCHOR = 20;
+/** Never wait for a scroll to settle longer than this. */
+const SETTLE_CAP_MS = 4000;
+/** All detail reveals together (stagger included) stay within roughly this window. */
+const REVEAL_WINDOW_MS = 210;
+const REVEAL_DURATION_MS = 240;
+const REVEAL_MAX_STAGGER_MS = 40;
+/** Stage connectors finish when the stage top reaches this many px from the viewport top (anchors land it at 88px). */
+const ANCHOR_END_TOP = 140;
 /** A stage becomes active when its section top crosses this fraction of the viewport height. */
 const STAGE_LINE = 0.5;
 const BIG_GAP = 10000;
@@ -144,25 +159,22 @@ function startEnhanced(root: HTMLElement, report: (stage: number) => void): Clea
     .then(([gsapModule, scrollTriggerModule, anime]) => {
       if (disposed) return; // unmounted, or the mode changed, while the code was loading
       const { ScrollTrigger } = scrollTriggerModule;
-      gsapModule.gsap.registerPlugin(ScrollTrigger);
-      if (!ScrollTrigger.isScrolling()) {
-        begin(gsapModule, scrollTriggerModule, anime);
-        return;
-      }
-      // A native smooth scroll (anchor jump on load, a step link) is still travelling. ScrollTrigger
-      // measures by resetting the scroll position, which would cancel it, so wait for it to settle.
-      let timeout = 0;
-      const onEnd = () => {
-        cancelWait?.();
-        if (!disposed) begin(gsapModule, scrollTriggerModule, anime);
-      };
-      cancelWait = () => {
-        ScrollTrigger.removeEventListener("scrollEnd", onEnd);
-        window.clearTimeout(timeout);
-        cancelWait = null;
-      };
-      ScrollTrigger.addEventListener("scrollEnd", onEnd);
-      timeout = window.setTimeout(onEnd, 4000); // never wait forever
+      gsapModule.gsap.registerPlugin(ScrollTrigger); // the only registration; `enhance` relies on it
+      // "load" is dropped from ScrollTrigger's automatic refresh events: that refresh can fire in the
+      // middle of the browser's smooth anchor scroll. Fonts and layout changes are refreshed below
+      // through scroll-settled refreshes instead.
+      ScrollTrigger.config({ autoRefreshEvents: "visibilitychange,DOMContentLoaded,resize" });
+      // A native smooth scroll (anchor jump on load, a step link) may still be travelling.
+      // ScrollTrigger measures by resetting the scroll position, which would cancel it, so wait
+      // until scrollY has demonstrably stopped moving (independent of ScrollTrigger's own tracking).
+      cancelWait = whenScrollSettled(
+        () => {
+          cancelWait = null;
+          if (!disposed) begin(gsapModule, scrollTriggerModule, anime);
+        },
+        // The diagram follows the real position meanwhile (scroll restoration after back navigation).
+        () => setStage(stageFromGeometry()),
+      );
     })
     .catch(fallBack);
 
@@ -191,8 +203,7 @@ function enhance(
   bridge: Bridge,
 ): Cleanup {
   const { gsap } = gsapModule;
-  const { ScrollTrigger } = scrollTriggerModule;
-  gsap.registerPlugin(ScrollTrigger);
+  const { ScrollTrigger } = scrollTriggerModule; // already registered by the caller
 
   const cleanups: Cleanup[] = [];
   let finished = false;
@@ -211,6 +222,9 @@ function enhance(
   };
 
   try {
+    // Set first: it changes layout (stage state labels appear), and everything below measures it.
+    root.setAttribute("data-motion", "live");
+
     // ---------- Anime.js: decorative detail and note arrivals (distinct child elements) ----------
     if (anime) {
       const details = createDetailMotion(root, anime);
@@ -250,11 +264,14 @@ function enhance(
         });
 
         // 2. Connectors drawn while the stage is read. Scrubbed, so reverse scrolling un-draws them.
+        //    They finish when the stage top reaches ANCHOR_END_TOP px (below where an anchor jump
+        //    lands it: header clearance 88px), so landing on any stage anchor shows its connectors
+        //    complete at every viewport height. That is always well before the next stage's boundary.
         const paths = pathsByStage.get(index);
         if (paths && paths.length > 0) {
           const timeline = gsap.timeline({
             defaults: { ease: "none" },
-            scrollTrigger: { trigger: step, start: "top 55%", end: "bottom 85%", scrub: true, invalidateOnRefresh: true },
+            scrollTrigger: { trigger: step, start: "top 55%", end: `top ${ANCHOR_END_TOP}px`, scrub: true, invalidateOnRefresh: true },
           });
           const each = paths.length === 1 ? 1 : Math.max(1 / paths.length, 0.4);
           paths.forEach((path, i) => {
@@ -298,35 +315,37 @@ function enhance(
     ScrollTrigger.addEventListener("refresh", resync);
     cleanups.push(() => ScrollTrigger.removeEventListener("refresh", resync));
 
-    // "safe" refreshes wait for any scroll in progress to end instead of cancelling it.
-    if (document.fonts?.ready) {
-      void document.fonts.ready.then(() => {
-        if (!finished) ScrollTrigger.refresh(true);
+    // Refreshes wait until scrolling has settled so they never cancel a smooth scroll in flight, and
+    // coalesce while one is pending.
+    let cancelRefresh: Cleanup | null = null;
+    const refreshWhenSettled = () => {
+      if (finished || cancelRefresh) return;
+      cancelRefresh = whenScrollSettled(() => {
+        cancelRefresh = null;
+        if (!finished) ScrollTrigger.refresh();
       });
+    };
+    cleanups.push(() => {
+      cancelRefresh?.();
+      cancelRefresh = null;
+    });
+
+    if (document.fonts?.ready) {
+      void document.fonts.ready.then(refreshWhenSettled);
     }
 
     const layout = root.querySelector(".mk-process-layout") ?? root;
-    let frame = 0;
     let primed = false;
     const observer = new ResizeObserver(() => {
       if (!primed) {
-        primed = true; // the initial notification is not a change
+        primed = true; // the initial notification is not a change (data-motion was set before measuring)
         return;
       }
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        if (!finished) ScrollTrigger.refresh(true);
-      });
+      refreshWhenSettled();
     });
     observer.observe(layout);
-    cleanups.push(() => {
-      observer.disconnect();
-      if (frame) window.cancelAnimationFrame(frame);
-      frame = 0;
-    });
+    cleanups.push(() => observer.disconnect());
 
-    root.setAttribute("data-motion", "live");
     bridge.setStage(bridge.stageFromGeometry());
   } catch (error) {
     dispose();
@@ -334,6 +353,65 @@ function enhance(
   }
 
   return dispose;
+}
+
+/**
+ * Calls `callback` once scrolling has stopped: window.scrollY unchanged for several consecutive
+ * animation frames (longer while a #hash target has not been reached yet, because a smooth anchor
+ * scroll may not have started). Does not depend on any library having observed a scroll event.
+ * `onFrame` (optional) runs once per frame while waiting, e.g. to keep a stage indicator current
+ * during the browser's own scroll restoration. Gives up waiting after SETTLE_CAP_MS. The returned
+ * function cancels everything (idempotent).
+ */
+function whenScrollSettled(callback: () => void, onFrame?: () => void): Cleanup {
+  let done = false;
+  let frame = 0;
+  let timeout = 0;
+  let last = window.scrollY;
+  let stable = 0;
+
+  const cancel = () => {
+    done = true;
+    window.cancelAnimationFrame(frame);
+    window.clearTimeout(timeout);
+  };
+  const finish = () => {
+    if (done) return;
+    cancel();
+    callback();
+  };
+  const tick = () => {
+    if (done) return;
+    onFrame?.();
+    const y = window.scrollY;
+    if (y === last) stable += 1;
+    else {
+      last = y;
+      stable = 0;
+    }
+    if (stable >= (anchorPending() ? SETTLE_FRAMES_PENDING_ANCHOR : SETTLE_FRAMES)) finish();
+    else frame = window.requestAnimationFrame(tick);
+  };
+
+  frame = window.requestAnimationFrame(tick);
+  timeout = window.setTimeout(finish, SETTLE_CAP_MS);
+  return cancel;
+}
+
+/** True while the URL hash names an element that the page has not scrolled to yet. */
+function anchorPending(): boolean {
+  if (!window.location.hash) return false;
+  let id = window.location.hash.slice(1);
+  try {
+    id = decodeURIComponent(id);
+  } catch {
+    // keep the raw id
+  }
+  const target = document.getElementById(id);
+  if (!target) return false;
+  const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+  const atEnd = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
+  return !atEnd && Math.abs(target.getBoundingClientRect().top - margin) > 2;
 }
 
 /** Rendered (screen-space) length of an orthogonal connector. Strokes use non-scaling-stroke, so dashes are in pixels. */
@@ -385,7 +463,9 @@ function createDetailMotion(root: HTMLElement, anime: AnimeModules): { apply: (s
         if (hide.length) animate(els(hide), { opacity: 0, duration: 180, ease: "outQuad" });
         const details = els(show, "detail");
         if (details.length) {
-          animate(details, { opacity: [0, 1], translateY: [8, 0], duration: 240, ease: "outQuad", delay: stagger(40) });
+          // Cap the whole reveal (stagger included) at ~450ms even when a jump reveals many details.
+          const step = Math.min(REVEAL_MAX_STAGGER_MS, REVEAL_WINDOW_MS / Math.max(1, details.length - 1));
+          animate(details, { opacity: [0, 1], translateY: [8, 0], duration: REVEAL_DURATION_MS, ease: "outQuad", delay: stagger(step) });
         }
         const notes = els(show, "note");
         if (notes.length) {
