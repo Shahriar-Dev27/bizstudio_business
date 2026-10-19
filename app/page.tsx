@@ -1,6 +1,6 @@
 import "./marketing.css";
+import { paperArcadeFontVariables } from "@/app/paper-arcade-fonts";
 import Link from "next/link";
-import { IBM_Plex_Mono, Josefin_Slab, Space_Grotesk } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { BusinessExamples } from "@/components/marketing/business-examples";
 import { CapabilitySection } from "@/components/marketing/capability-section";
@@ -11,14 +11,11 @@ import { HowItWorks } from "@/components/marketing/how-it-works";
 import { MarketingBrand } from "@/components/marketing/marketing-brand";
 import { NotesSection } from "@/components/marketing/notes-section";
 
-// Self-hosted at build time with font-display: swap; the CSS stacks fall back to Arial / ui-monospace.
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "700"], display: "swap", variable: "--font-mk-sans" });
-const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], display: "swap", variable: "--font-mk-mono" });
-const josefinSlab = Josefin_Slab({ subsets: ["latin"], style: ["normal", "italic"], display: "swap", variable: "--font-mk-slab", fallback: ["Georgia", "serif"] });
+
 
 export default function HomePage() {
   return (
-    <div className={`marketing-page ${spaceGrotesk.variable} ${plexMono.variable} ${josefinSlab.variable}`}>
+    <div className={`marketing-page ${paperArcadeFontVariables}`}>
       <HashLink hash="main" className="mk-skip-link">Skip to content</HashLink>
       <SiteHeader />
       <main id="main" tabIndex={-1} className="mk-main">

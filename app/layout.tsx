@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./paper-arcade.css";
 
 export const metadata: Metadata = {
   title: "BizGuide AI — Business planning partner for Bangladesh",
