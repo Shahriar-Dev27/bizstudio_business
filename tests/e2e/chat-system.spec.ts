@@ -52,6 +52,23 @@ async function send(page: Page, text: string) {
   await page.getByRole("textbox", { name: "Ask BizGuide AI" }).fill(text);
   await page.getByRole("button", { name: "Send message", exact: true }).click();
 }
+test("keeps navigation and notes visible with common advertising filters", async ({
+  page,
+}, info) => {
+  await ready(page);
+  // Cosmetic ad-blocking rules must not mistake advisor controls for adverts.
+  await page.addStyleTag({
+    content: ".adv-header, .adv-sidebar { display: none !important; }",
+  });
+  await expect(
+    page.getByRole("link", { name: "Back to home", exact: true }),
+  ).toBeInViewport();
+  if (info.project.name === "mobile")
+    await page.getByRole("button", { name: "Notes", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Pinned notes", exact: true }),
+  ).toBeVisible();
+});
 test("shows thinking while waiting, then reveals the completed streamed result", async ({
   page,
 }) => {

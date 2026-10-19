@@ -1,13 +1,29 @@
+# Dependencies and generated builds
 node_modules/
-.next/
-out/
+/.next/
+/out/
+/dist/
+*.tsbuildinfo
+
+# Local secrets (a placeholder-only example may be committed)
 .env*
 !.env.example
-npm-debug.log*
+
+# Local deployment and agent artifacts
+/.vercel/
+/.netlify/
+/.agency/
+
+# Test output and generated evaluation results
+/coverage/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/docs/evaluations/advisor-live-results.json
+
+# Logs and operating system files
+*.log
 .DS_Store
-*.tsbuildinfo
-.agency/chat-improvements/build/
-.agency/chat-improvements/test-results/
-.agency/chat-improvements/*.log
-.agency/chat-improvements/worker.mjs
-playwright-report/
+Thumbs.db
+Desktop.ini

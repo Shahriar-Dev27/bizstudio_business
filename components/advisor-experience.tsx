@@ -168,21 +168,21 @@ export function AdvisorExperience() {
   );
   return (
     <div className="adv-shell" lang={state.locale}>
-      <header className="adv-header" inert={panel ? true : undefined}>
-        <div className="adv-header-bar">
-          <div className="adv-header-brand">
+      <header className="advisor-header" inert={panel ? true : undefined}>
+        <div className="advisor-header-bar">
+          <div className="advisor-header-brand">
             <MarketingBrand />
-            <p className="mk-label adv-header-tag">
+            <p className="mk-label advisor-header-tag">
               {state.locale === "bn"
                 ? "বাংলাদেশের ব্যবসার পরিকল্পনা"
                 : "Bangladesh business advisor"}
             </p>
           </div>
-          <div className="adv-header-actions">
+          <div className="advisor-header-actions">
             <button
               type="button"
               onClick={chat.newConversation}
-              className="mk-button-secondary adv-header-button"
+              className="mk-button-secondary advisor-header-button"
               aria-label={t.newPlan}
             >
               <RotateCcw size={18} aria-hidden="true" />
@@ -191,7 +191,7 @@ export function AdvisorExperience() {
             <button
               type="button"
               onClick={(e) => open("notes", e.currentTarget)}
-              className="mk-button-secondary adv-header-button adv-notes-toggle"
+              className="mk-button-secondary advisor-header-button adv-notes-toggle"
               aria-label={t.notes}
               aria-haspopup="dialog"
             >
@@ -203,7 +203,7 @@ export function AdvisorExperience() {
             </button>
             <Link
               href="/"
-              className="mk-button-secondary adv-header-button"
+              className="mk-button-secondary advisor-header-button"
               aria-label={t.home}
             >
               <ArrowLeft size={18} aria-hidden="true" />
@@ -348,7 +348,7 @@ export function AdvisorExperience() {
             </div>
           </div>
         </main>
-        <div className="adv-sidebar">{notePanel}</div>
+        <div className="advisor-sidebar">{notePanel}</div>
       </div>
       {panel && (
         <div
