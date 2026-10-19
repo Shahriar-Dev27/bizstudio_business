@@ -1,5 +1,8 @@
+"use client";
+
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { Pin } from "lucide-react";
+import { Check, Pin } from "lucide-react";
 import { ProcessDiagram } from "./process-diagram";
 import {
   CONTEXT_CHIPS,
@@ -12,9 +15,12 @@ import {
   SAMPLE_LABEL,
 } from "./process-content";
 import type { PlanTag, ProcessStage } from "./process-content";
+import { useProcessMotion } from "./use-process-motion";
 
-// The static page shows the finished journey: earlier stages complete, the last one current.
-const DEFAULT_ACTIVE_STAGE = PROCESS_STAGES.length - 1;
+type StageState = "complete" | "active" | "future";
+
+// Text twin of the colour state, shown beside each stage while the scroll walkthrough is running.
+const STAGE_STATE_LABEL: Record<StageState, string> = { complete: "Done", active: "Now", future: "Next" };
 
 const TAGS_IN_LEGEND: readonly PlanTag[] = ["Assumption", "Verify locally"];
 
@@ -90,10 +96,14 @@ function StageSample({ index, stage }: { index: number; stage: ProcessStage }): 
 }
 
 export function HowItWorks(): React.JSX.Element {
-  const activeStage = DEFAULT_ACTIVE_STAGE;
+  // The single authoritative active stage. The hook reports boundary changes only (never per scroll
+  // pixel); it reports the finished final stage in every mode without scroll-driven motion.
+  const [activeStage, setActiveStage] = useState(0);
+  const rootRef = useRef<HTMLElement>(null);
+  useProcessMotion(rootRef, setActiveStage);
 
   return (
-    <section id="how-it-works" className="mk-section mk-process mk-anchor" aria-labelledby="process-title">
+    <section ref={rootRef} id="how-it-works" className="mk-section mk-process mk-anchor" aria-labelledby="process-title">
       <div className="mk-container">
         <div className="mk-section-head">
           <p className="mk-eyebrow">One idea, five steps</p>
@@ -125,7 +135,7 @@ export function HowItWorks(): React.JSX.Element {
           <div className="mk-process-copy">
             <ol className="mk-stages">
               {PROCESS_STAGES.map((stage, index) => {
-                const state = index < activeStage ? "complete" : index === activeStage ? "active" : "future";
+                const state: StageState = index < activeStage ? "complete" : index === activeStage ? "active" : "future";
                 return (
                   <li key={stage.id} className="mk-stage-item">
                     <section id={stage.id} className="mk-stage mk-anchor" data-process-step={index} data-state={state}>
@@ -133,7 +143,13 @@ export function HowItWorks(): React.JSX.Element {
                         <span className="mk-stage-badge mk-number" aria-hidden="true">
                           {stage.number}
                         </span>
-                        <p className="mk-label mk-stage-count">Step {stage.number} of {PROCESS_STAGES.length}</p>
+                        <p className="mk-label mk-stage-count">
+                          Step {stage.number} of {PROCESS_STAGES.length}
+                          <span className="mk-stage-state" aria-hidden="true">
+                            {state === "complete" && <Check size={12} strokeWidth={3} />}
+                            {STAGE_STATE_LABEL[state]}
+                          </span>
+                        </p>
                         <h3 className="mk-h3 mk-stage-title">{stage.title}</h3>
                       </div>
                       <p className="mk-body mk-stage-text">{stage.description}</p>

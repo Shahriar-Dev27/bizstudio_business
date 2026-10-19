@@ -85,9 +85,9 @@ export function ProcessDiagram({ activeStage }: { activeStage: number }): React.
             {PROCESS_STAGES[2].details.map((lens, index) => {
               const Icon = LENS_ICONS[index];
               return (
-                <li key={lens} className="mk-lens" data-process-detail>
+                <li key={lens} className="mk-lens">
                   <svg className="mk-stub" viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false"><path d="M50 0 V100" data-process-path={`lens-${index + 1}`} data-process-stage="2" /></svg>
-                  <span className="mk-lens-chip"><Icon size={16} strokeWidth={2.25} aria-hidden="true" />{lens}</span>
+                  <span className="mk-lens-chip" data-process-detail><Icon size={16} strokeWidth={2.25} aria-hidden="true" />{lens}</span>
                 </li>
               );
             })}

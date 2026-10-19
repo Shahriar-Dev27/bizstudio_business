@@ -890,17 +890,14 @@
   box-shadow: var(--mk-shadow-compact);
 }
 
-.mk-stage[data-state="complete"] .mk-stage-badge {
-  background: var(--mk-sage);
-}
-
-.mk-stage[data-state="active"] .mk-stage-badge {
-  background: var(--mk-orange);
-  color: var(--mk-on-orange);
-}
-
 .mk-stage-count {
   margin: 0;
+}
+
+/* Progress state is only shown (colour AND text) while the scroll walkthrough is running; see the
+   sticky block below. In normal-flow modes the list is a plain numbered sequence. */
+.mk-stage-state {
+  display: none;
 }
 
 .mk-stage-title {
@@ -1062,8 +1059,9 @@
 }
 
 /* Sticky diagram layout: wide AND tall viewports with motion allowed. Native scrolling only.
-   The diagram is ~590px tall at 1100px+ widths and ~680px at 1024px, so the narrowest band
-   needs 760px of height to keep it fully on screen. */
+   Measured diagram heights: ~590px from 1200px wide, up to ~680px at 1024px wide. With the 80px
+   sticky offset and the 6px hard shadow it fits a 720px-tall viewport from 1200px wide; the
+   narrower 1024-1199px band needs 768px so the diagram is never clipped. */
 @media (min-width: 1024px) {
   .mk-process-layout {
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
@@ -1076,8 +1074,10 @@
   }
 }
 
-@media (min-width: 1100px) and (min-height: 720px) and (prefers-reduced-motion: no-preference),
-  (min-width: 1024px) and (max-width: 1099px) and (min-height: 760px) and (prefers-reduced-motion: no-preference) {
+/* KEEP IN SYNC with PROCESS_MOTION_QUERY in components/marketing/use-process-motion.ts: the hook
+   enables scroll-driven motion under exactly this condition. */
+@media (min-width: 1200px) and (min-height: 720px) and (prefers-reduced-motion: no-preference),
+  (min-width: 1024px) and (max-width: 1199px) and (min-height: 768px) and (prefers-reduced-motion: no-preference) {
   .mk-process-visual {
     position: sticky;
     top: 80px;
@@ -1085,6 +1085,36 @@
 
   .mk-stage {
     min-height: 75vh;
+  }
+
+  /* data-motion="live" is set by the hook only while ScrollTrigger is tracking the stages. */
+  .mk-process[data-motion="live"] .mk-stage[data-state="complete"] .mk-stage-badge {
+    background: var(--mk-sage);
+  }
+
+  .mk-process[data-motion="live"] .mk-stage[data-state="active"] .mk-stage-badge {
+    background: var(--mk-orange);
+    color: var(--mk-on-orange);
+  }
+
+  .mk-process[data-motion="live"] .mk-stage-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    border: var(--mk-border);
+    background: var(--mk-paper);
+    padding: 0 6px;
+    vertical-align: baseline;
+  }
+
+  .mk-process[data-motion="live"] .mk-stage[data-state="complete"] .mk-stage-state {
+    background: var(--mk-sage);
+  }
+
+  .mk-process[data-motion="live"] .mk-stage[data-state="active"] .mk-stage-state {
+    background: var(--mk-orange);
+    color: var(--mk-on-orange);
   }
 }
 
@@ -1336,6 +1366,8 @@
   position: absolute;
   width: 0;
   height: 0;
+  /* Fully visible by default; the hook animates --mk-arrow while scrubbing the connector. */
+  opacity: var(--mk-arrow, 1);
 }
 
 .mk-conn--right::after {
