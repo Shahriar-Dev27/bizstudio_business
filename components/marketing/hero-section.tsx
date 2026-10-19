@@ -14,7 +14,7 @@ export function HeroSection(): React.JSX.Element {
             <p className="mk-lead">
               Your business planning partner for Bangladesh. Turn a rough idea into clear questions, practical checks, and a <em className="mk-emphasis">first small test</em>.
             </p>
-            <HeroForm appearance="marketing" />
+            <HeroForm />
             <div className="mk-hero-actions">
               <HashLink hash="how-it-works" className="mk-button-secondary">See how it works</HashLink>
             </div>
