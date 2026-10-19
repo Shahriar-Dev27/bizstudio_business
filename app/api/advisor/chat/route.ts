@@ -1,82 +1,156 @@
-import { NextRequest, NextResponse } from "next/server";
-import { BANGLADESH_ADVISOR_PROMPT } from "@/lib/advisor-prompt";
-
+﻿import { NextRequest, NextResponse } from "next/server";
+import { readBoundedJson, validateAdvisorRequest } from "@/lib/chat/history";
+import { openNvidiaStream, buildProviderBody } from "@/lib/chat/provider";
+import { reserveGeneration, settleGeneration } from "@/lib/chat/admission";
+import { getAnonymousSession, hashIp } from "@/lib/chat/session";
+import { createGenerationJob } from "@/lib/chat/jobs";
+import { ChatError } from "@/lib/chat/errors";
+import { encodeChatEvent } from "@/lib/chat/sse";
+import { recordChatMetric } from "@/lib/chat/telemetry";
 export const runtime = "nodejs";
-
-type IncomingMessage = { role: "user" | "assistant"; content: string };
-
-function validMessages(value: unknown): value is IncomingMessage[] {
-  return Array.isArray(value) && value.length > 0 && value.length <= 30 && value.every((message) => {
-    if (!message || typeof message !== "object") return false;
-    const candidate = message as Partial<IncomingMessage>;
-    return (candidate.role === "user" || candidate.role === "assistant") && typeof candidate.content === "string" && candidate.content.trim().length > 0 && candidate.content.length <= 12000;
-  });
-}
-
+export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-  const model = process.env.OPENROUTER_MODEL?.trim() || "openrouter/free";
-
-  if (!apiKey) {
-    return NextResponse.json({ error: "OpenRouter is not configured on the server." }, { status: 503 });
-  }
-
-  let body: unknown;
+  const requestId = crypto.randomUUID(),
+    started = Date.now();
+  let reservation: string | undefined;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "The request body must be valid JSON." }, { status: 400 });
-  }
-
-  const messages = (body as { messages?: unknown })?.messages;
-  if (!validMessages(messages)) {
-    return NextResponse.json({ error: "Send between 1 and 30 valid conversation messages." }, { status: 400 });
-  }
-
-  try {
-    const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-        "X-Title": "BizGuide AI",
-      },
-      body: JSON.stringify({
-        model,
-        stream: true,
-        temperature: 0.68,
-        max_tokens: 1800,
-        messages: [
-          { role: "system", content: BANGLADESH_ADVISOR_PROMPT },
-          ...messages.slice(-24).map((message) => ({ role: message.role, content: message.content.trim() })),
-        ],
-      }),
-      signal: AbortSignal.timeout(90000),
+    const origin = request.headers.get("origin");
+    if (origin && origin !== new URL(request.url).origin)
+      return NextResponse.json(
+        {
+          error: "Please send this request from the advisor website.",
+          code: "invalid_request",
+          requestId,
+        },
+        { status: 403, headers: { "Cache-Control": "no-store" } },
+      );
+    const input = validateAdvisorRequest(await readBoundedJson(request));
+    if (!process.env.NVIDIA_API_KEY?.trim())
+      throw new ChatError("not_configured", 503);
+    const session = getAnonymousSession(request),
+      providerBody = buildProviderBody(input);
+    reservation = await reserveGeneration({
+      sessionId: session.id,
+      ipKey: hashIp(request),
+      attemptId: input.attemptId,
+      maxOutputTokens: providerBody.max_tokens,
     });
-
-    if (!upstream.ok || !upstream.body) {
-      const errorBody = await upstream.text();
-      let message = "The advisor provider could not complete this request.";
-      try {
-        const parsed = JSON.parse(errorBody) as { error?: { message?: string } | string };
-        message = typeof parsed.error === "string" ? parsed.error : parsed.error?.message || message;
-      } catch { /* Keep the safe fallback instead of exposing raw provider output. */ }
-      return NextResponse.json({ error: message }, { status: upstream.status || 502 });
+    const headers: Record<string, string> = {
+      "Cache-Control": "no-store, no-transform",
+      "X-Request-ID": requestId,
+    };
+    if (session.cookie) headers["Set-Cookie"] = session.cookie;
+    if (process.env.NETLIFY === "true") {
+      const id = await createGenerationJob(
+        input,
+        session.id,
+        requestId,
+        reservation,
+      );
+      reservation = undefined;
+      return NextResponse.json(
+        { jobId: id, requestId, attemptId: input.attemptId },
+        { status: 202, headers },
+      );
     }
-
-    // ponytail: proxy OpenRouter's native SSE stream; transform it here only if server-side moderation or usage metering is added.
-    return new Response(upstream.body, {
-      status: 200,
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    request.signal.addEventListener("abort", abort, { once: true });
+    let opened;
+    try {
+      opened = await openNvidiaStream(input, {
+        requestId,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      request.signal.removeEventListener("abort", abort);
+      throw error;
+    }
+    const id = reservation;
+    reservation = undefined;
+    let firstContentMs: number | undefined;
+    const stream = new ReadableStream<Uint8Array>({
+      async start(output) {
+        let outcome = "interrupted",
+          generatedTokens: number | undefined,
+          code: string | undefined;
+        try {
+          for await (const event of opened.events) {
+            if (event.type === "delta") firstContentMs ??= Date.now() - started;
+            if (event.type === "finish") {
+              outcome = event.reason === "length" ? "truncated" : "complete";
+              generatedTokens = event.generatedTokens;
+            }
+            if (event.type === "error") {
+              outcome = "interrupted";
+              code = event.code;
+            }
+            if (!controller.signal.aborted)
+              output.enqueue(encodeChatEvent(event));
+          }
+          if (!controller.signal.aborted) output.close();
+        } catch {
+          try {
+            output.error(new Error("Reply interrupted"));
+          } catch {
+            /* Reader already cancelled. */
+          }
+        } finally {
+          request.signal.removeEventListener("abort", abort);
+          await opened.close();
+          await settleGeneration(id!, { outcome, generatedTokens }).catch(
+            () => undefined,
+          );
+          recordChatMetric({
+            requestId,
+            model: providerBody.model,
+            mode: input.mode,
+            outcome,
+            durationMs: Date.now() - started,
+            firstContentMs,
+            generatedTokens,
+            code,
+          });
+        }
+      },
+      async cancel() {
+        controller.abort();
+        await opened.close();
+      },
+    });
+    return new Response(stream, {
       headers: {
+        ...headers,
         "Content-Type": "text/event-stream; charset=utf-8",
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
         "X-Accel-Buffering": "no",
       },
     });
   } catch (error) {
-    const timedOut = error instanceof DOMException && error.name === "TimeoutError";
-    return NextResponse.json({ error: timedOut ? "The advisor took too long to respond. Please try again." : "Unable to reach the advisor service." }, { status: timedOut ? 504 : 502 });
+    if (reservation)
+      await settleGeneration(reservation, { outcome: "failed" }).catch(
+        () => undefined,
+      );
+    const failure =
+      error instanceof ChatError
+        ? error
+        : new ChatError("provider_unavailable", 502);
+    return NextResponse.json(
+      {
+        error: failure.message,
+        code: failure.code,
+        requestId,
+        retryable: failure.status >= 500 || failure.status === 429,
+        retryAfterSeconds: failure.retryAfterSeconds,
+      },
+      {
+        status: failure.status,
+        headers: {
+          "Cache-Control": "no-store",
+          ...(failure.retryAfterSeconds
+            ? { "Retry-After": String(failure.retryAfterSeconds) }
+            : {}),
+        },
+      },
+    );
   }
 }

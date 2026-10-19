@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Check } from "lucide-react";
-import { encodeIdea } from "@/lib/encode-idea";
+import { prepareDraftHandoff } from "@/lib/chat/draft-handoff";
 
 const MAX_LENGTH = 500;
 const MIN_LENGTH = 4;
@@ -66,10 +66,13 @@ const EXAMPLES: readonly Example[] = [
 const FIRST = EXAMPLES[0];
 
 export function BusinessExamples(): React.JSX.Element {
+  const router = useRouter();
+  const [handoffError, setHandoffError] = useState("");
   const [selectedKey, setSelectedKey] = useState<ExampleKey>(FIRST.key);
   const [text, setText] = useState(FIRST.prompt);
 
-  const selected = EXAMPLES.find((example) => example.key === selectedKey) ?? FIRST;
+  const selected =
+    EXAMPLES.find((example) => example.key === selectedKey) ?? FIRST;
   const trimmed = text.trim();
   const ready = trimmed.length >= MIN_LENGTH;
 
@@ -81,27 +84,46 @@ export function BusinessExamples(): React.JSX.Element {
   }
 
   return (
-    <section id="examples" className="mk-section mk-anchor" aria-labelledby="examples-title">
+    <section
+      id="examples"
+      className="mk-section mk-anchor"
+      aria-labelledby="examples-title"
+    >
       <div className="mk-container">
         <div className="mk-section-head">
           <p className="mk-eyebrow">Start from an example</p>
           <h2 id="examples-title" className="mk-h2">
-            Borrow a question, then <span className="mk-accent mk-slab mk-slab-italic">make it yours.</span>
+            Borrow a question, then{" "}
+            <span className="mk-accent mk-slab mk-slab-italic">
+              make it yours.
+            </span>
           </h2>
           <p className="mk-lead">
-            Pick a business, change the wording to fit your own plan, and carry it into the advisor.
+            Pick a business, change the wording to fit your own plan, and carry
+            it into the advisor.
           </p>
         </div>
 
         <div className="mk-examples-grid">
-          <div role="group" aria-labelledby="examples-pick" className="mk-examples-pick">
-            <p id="examples-pick" className="mk-label">Choose an example</p>
+          <div
+            role="group"
+            aria-labelledby="examples-pick"
+            className="mk-examples-pick"
+          >
+            <p id="examples-pick" className="mk-label">
+              Choose an example
+            </p>
             <ul className="mk-examples-list">
               {EXAMPLES.map((example) => {
                 const pressed = example.key === selectedKey;
                 return (
                   <li key={example.key}>
-                    <button type="button" aria-pressed={pressed} onClick={() => choose(example)} className="mk-example-choice">
+                    <button
+                      type="button"
+                      aria-pressed={pressed}
+                      onClick={() => choose(example)}
+                      className="mk-example-choice"
+                    >
                       <span className="mk-example-mark" aria-hidden="true">
                         {pressed && <Check size={18} strokeWidth={3.5} />}
                       </span>
@@ -109,20 +131,30 @@ export function BusinessExamples(): React.JSX.Element {
                         <span className="mk-example-name">{example.name}</span>
                         <span className="mk-label">{example.setting}</span>
                       </span>
-                      {pressed && <span className="mk-example-selected mk-label" aria-hidden="true">Selected</span>}
+                      {pressed && (
+                        <span
+                          className="mk-example-selected mk-label"
+                          aria-hidden="true"
+                        >
+                          Selected
+                        </span>
+                      )}
                     </button>
                   </li>
                 );
               })}
             </ul>
             <p className="mk-examples-note">
-              These starting points are written in advance. Nothing on this page calls the AI.
+              These starting points are written in advance. Nothing on this page
+              calls the AI.
             </p>
           </div>
 
           <div className="mk-panel mk-panel--sage mk-examples-editor">
             <div className="mk-examples-field">
-              <label htmlFor="example-question" className="mk-label">Your question — edit it freely</label>
+              <label htmlFor="example-question" className="mk-label">
+                Your question — edit it freely
+              </label>
               <textarea
                 id="example-question"
                 value={text}
@@ -132,33 +164,54 @@ export function BusinessExamples(): React.JSX.Element {
                 className="mk-textarea"
                 aria-describedby="example-count example-helper"
               />
-              <p id="example-count" className="mk-label">{text.length} / {MAX_LENGTH} characters</p>
+              <p id="example-count" className="mk-label">
+                {text.length} / {MAX_LENGTH} characters
+              </p>
             </div>
 
             <div className="mk-examples-action">
               {ready ? (
-                <Link
-                  href={`/advisor?idea=${encodeIdea(trimmed)}`}
-                  prefetch={false}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (prepareDraftHandoff(trimmed).ok)
+                      router.push("/advisor");
+                    else
+                      setHandoffError(
+                        "Copy this question, open /advisor, and paste it there. Your browser could not carry the draft.",
+                      );
+                  }}
                   className="mk-button mk-examples-go"
                   aria-describedby="example-helper"
                 >
                   Open in the advisor <span aria-hidden="true">↗</span>
-                </Link>
+                </button>
               ) : (
-                <button type="button" aria-disabled="true" className="mk-button mk-examples-go" aria-describedby="example-helper">
+                <button
+                  type="button"
+                  aria-disabled="true"
+                  className="mk-button mk-examples-go"
+                  aria-describedby="example-helper"
+                >
                   Open in the advisor <span aria-hidden="true">↗</span>
                 </button>
               )}
-              <p id="example-helper" aria-live="polite" className="mk-examples-helper">
-                {ready
-                  ? "Opens the advisor with this text in the message box. Nothing is sent until you press send."
-                  : `Write at least ${MIN_LENGTH} characters to open the advisor.`}
+              <p
+                id="example-helper"
+                aria-live="polite"
+                className="mk-examples-helper"
+              >
+                {handoffError ||
+                  (ready
+                    ? "Opens the advisor with this text in the message box. Nothing is sent until you press send."
+                    : `Write at least ${MIN_LENGTH} characters to open the advisor.`)}
               </p>
             </div>
 
             <div className="mk-examples-topics">
-              <h3 className="mk-label">What the advisor can explore for “{selected.name}”</h3>
+              <h3 className="mk-label">
+                What the advisor can explore for “{selected.name}”
+              </h3>
               <ul className="mk-examples-topic-list">
                 {selected.topics.map((topic) => (
                   <li key={topic}>{topic}</li>

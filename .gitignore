@@ -6,3 +6,8 @@ out/
 npm-debug.log*
 .DS_Store
 *.tsbuildinfo
+.agency/chat-improvements/build/
+.agency/chat-improvements/test-results/
+.agency/chat-improvements/*.log
+.agency/chat-improvements/worker.mjs
+playwright-report/
